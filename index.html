@@ -193,9 +193,10 @@
       <span class="tab-item-icon">🔍</span>
       <span data-i18n="tab_search">검색</span>
     </div>
-    <div class="tab-item" onclick="switchTab('mypage')">
+    <div class="tab-item" onclick="switchTab('mypage')" style="position: relative;">
       <span class="tab-item-icon">👤</span>
       <span data-i18n="tab_mypage">내 정보</span>
+      <span id="myPageUnreadBadge" style="display:none; position:absolute; top:4px; right:20px; background:var(--red); color:#fff; border-radius:50%; width:16px; height:16px; align-items:center; justify-content:center; font-size:9px; font-weight:700; line-height:1;"></span>
     </div>
   </div>
 </div>
@@ -1223,6 +1224,9 @@ function switchTab(tabId) {
     }
     renderSearchSubCategoryTabs(parentId);
     triggerSearch();
+  } else if (tabId === 'mypage') {
+    loadMyInquiries();
+    loadMyOrders();
   }
   
   // Real-time language updates
@@ -2536,6 +2540,24 @@ async function uploadChatMedia(input) {
 
     if (dbErr) throw dbErr;
 
+    // Local Echo for media: immediately render the sent media in sender's view
+    const container = document.getElementById('chatMessagesBody');
+    if (container) {
+      const emptyEl = container.querySelector('.empty');
+      if (emptyEl) emptyEl.remove();
+
+      const tempMsg = {
+        room_id: currentChatRoomId,
+        sender_id: user.id,
+        message: mediaUrl,
+        message_type: isImage ? 'image' : 'video',
+        created_at: new Date().toISOString()
+      };
+      const rowHtml = renderMessageRow(tempMsg, user.id);
+      container.insertAdjacentHTML('beforeend', rowHtml);
+      scrollToBottom('chatMessagesBody');
+    }
+
     // Sync to Telegram asynchronously
     syncMessageToTelegram(currentChatRoomId, user.id, mediaUrl, isImage ? 'image' : 'video');
   } catch (err) {
@@ -2720,11 +2742,14 @@ async function loadMyInquiries() {
       
     if (error) throw error;
     
+    const tabBadge = document.getElementById('myPageUnreadBadge');
     if (!rooms || rooms.length === 0) {
       container.innerHTML = `<div class="empty" style="padding:20px 0; font-size:12px; color:var(--t3);">${t('no_inquiries')}</div>`;
+      if (tabBadge) tabBadge.style.display = 'none';
       return;
     }
     
+    let totalUnread = 0;
     container.innerHTML = rooms.map(r => {
       const sellerName = r.seller?.store_name || r.seller?.name || t('role_seller');
       const prodTitle = r.products?.title || t('product_inquiry');
@@ -2733,6 +2758,7 @@ async function loadMyInquiries() {
         : ['👨','👩','🧑','👦','👧','🧔'][sellerName.charCodeAt(0) % 6];
         
       const unreadCount = r.chat_messages ? r.chat_messages.filter(m => !m.is_read && m.sender_id !== user.id).length : 0;
+      totalUnread += unreadCount;
       const badgeHtml = unreadCount > 0 
         ? `<span style="background:var(--red); color:#fff; border-radius:50%; width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; margin-right:4px;">${unreadCount}</span>` 
         : '';
@@ -2748,9 +2774,20 @@ async function loadMyInquiries() {
         </div>
       `;
     }).join('');
+
+    if (tabBadge) {
+      if (totalUnread > 0) {
+        tabBadge.textContent = totalUnread;
+        tabBadge.style.display = 'inline-flex';
+      } else {
+        tabBadge.style.display = 'none';
+      }
+    }
   } catch (err) {
     console.error(err);
     container.innerHTML = `<div class="empty" style="padding:20px 0; font-size:12px; color:var(--red);">${t('history_load_failed')}</div>`;
+    const tabBadge = document.getElementById('myPageUnreadBadge');
+    if (tabBadge) tabBadge.style.display = 'none';
   }
 }
 
