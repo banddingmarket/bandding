@@ -66,6 +66,7 @@ const server = http.createServer((req, res) => {
 const configPath = path.join(__dirname, 'js', 'config.js');
 let supabaseUrl = '';
 let supabaseKey = '';
+const supabaseServiceKey = 'sb_secret_1nAuDu-cCmfFprNE-QXdbw_UjFDDENe'; // 서버에 안전하게 하드코딩 (브라우저 비노출)
 let telegramBotToken = '';
 let telegramChatId = '';
 
@@ -82,7 +83,7 @@ try {
     if (tokenMatch) telegramBotToken = tokenMatch[1];
     if (chatIdMatch) telegramChatId = chatIdMatch[1];
     
-    console.log(`[Telegram Daemon] Loaded configs. Bot Token: ${telegramBotToken ? '***' : 'NONE'}, Chat ID: ${telegramChatId || 'NONE'}`);
+    console.log(`[Telegram Daemon] Loaded configs. Bot Token: ${telegramBotToken ? '***' : 'NONE'}, Chat ID: ${telegramChatId || 'NONE'}, Service Key: ${supabaseServiceKey ? '***' : 'NONE'}`);
   }
 } catch (e) {
   console.error("[Telegram Daemon] Failed to read config:", e);
@@ -91,7 +92,8 @@ try {
 let tgOffset = 0;
 
 async function pollTelegramUpdates() {
-  if (!telegramBotToken || !telegramChatId || !supabaseUrl || !supabaseKey) {
+  const dbKey = supabaseServiceKey || supabaseKey; // 서비스 키 우선 사용 (RLS 우회)
+  if (!telegramBotToken || !telegramChatId || !supabaseUrl || !dbKey) {
     // If not configured, wait 10s and check again
     setTimeout(pollTelegramUpdates, 10000);
     return;
@@ -150,8 +152,8 @@ async function pollTelegramUpdates() {
             const roomUrl = `${supabaseUrl}/rest/v1/chat_rooms?telegram_thread_id=eq.${threadId}&select=id,seller_id,buyer_id`;
             const roomRes = await fetch(roomUrl, {
               headers: {
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
+                'apikey': dbKey,
+                'Authorization': `Bearer ${dbKey}`
               }
             });
             
@@ -164,8 +166,8 @@ async function pollTelegramUpdates() {
                 const checkUrl = `${supabaseUrl}/rest/v1/chat_messages?telegram_msg_id=eq.${msg.message_id}&select=id`;
                 const checkRes = await fetch(checkUrl, {
                   headers: {
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`
+                    'apikey': dbKey,
+                    'Authorization': `Bearer ${dbKey}`
                   }
                 });
                 
@@ -182,8 +184,8 @@ async function pollTelegramUpdates() {
                 const insertRes = await fetch(insertUrl, {
                   method: 'POST',
                   headers: {
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`,
+                    'apikey': dbKey,
+                    'Authorization': `Bearer ${dbKey}`,
                     'Content-Type': 'application/json',
                     'Prefer': 'return=representation'
                   },
@@ -202,8 +204,8 @@ async function pollTelegramUpdates() {
                   await fetch(updateRoomUrl, {
                     method: 'PATCH',
                     headers: {
-                      'apikey': supabaseKey,
-                      'Authorization': `Bearer ${supabaseKey}`,
+                      'apikey': dbKey,
+                      'Authorization': `Bearer ${dbKey}`,
                       'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -220,10 +222,13 @@ async function pollTelegramUpdates() {
     }
   } catch (err) {
     console.error("[Telegram Daemon] Error polling Updates:", err.message);
+    // 에러 발생 시에는 5초 대기 후 재시도 (과부하 방지)
+    setTimeout(pollTelegramUpdates, 5000);
+    return;
   }
 
-  // Continue long polling
-  setTimeout(pollTelegramUpdates, 1500);
+  // 정상 처리 완료 시 즉시(50ms 대기) 다음 롱폴링 호출하여 실시간성 극대화
+  setTimeout(pollTelegramUpdates, 50);
 }
 
 // Start the daemon loop

@@ -70,20 +70,80 @@ const KOREAN_PROVINCES = [
   }
 ];
 
+// Helper to translate Korean text into English romanized text for foreigners
+function romanizeKorean(text) {
+  const fixedProvinces = {
+    "서울특별시": "Seoul",
+    "부산광역시": "Busan",
+    "대구광역시": "Daegu",
+    "인천광역시": "Incheon",
+    "광주광역시": "Gwangju",
+    "대전광역시": "Daejeon",
+    "울산광역시": "Ulsan",
+    "세종특별자치시": "Sejong",
+    "경기도": "Gyeonggi-do",
+    "강원특별자치도": "Gangwon-do",
+    "충청북도": "Chungcheongbuk-do",
+    "충청남도": "Chungcheongnam-do",
+    "전북특별자치도": "Jeonbuk-do",
+    "전남특별자치도": "Jeonnam-do",
+    "경상북도": "Gyeongsangbuk-do",
+    "경상남도": "Gyeongsangnam-do",
+    "제주특별자치도": "Jeju-do"
+  };
+
+  if (fixedProvinces[text]) {
+    return fixedProvinces[text];
+  }
+
+  const choList = ["g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"];
+  const jungList = ["a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"];
+  const jongList = ["", "g", "g", "gs", "n", "nj", "nh", "d", "l", "lg", "lm", "lb", "ls", "lt", "lp", "lh", "m", "b", "bs", "s", "ss", "ng", "j", "ch", "k", "t", "p", "h"];
+
+  let result = "";
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const code = char.charCodeAt(0) - 44032;
+
+    if (code >= 0 && code <= 11172) {
+      const cho = Math.floor(code / 588);
+      const jung = Math.floor((code % 588) / 28);
+      const jong = code % 28;
+
+      let charRom = choList[cho] + jungList[jung] + jongList[jong];
+      
+      if (char === "구" && i === text.length - 1) charRom = "-gu";
+      else if (char === "시" && i === text.length - 1) charRom = "-si";
+      else if (char === "군" && i === text.length - 1) charRom = "-gun";
+      
+      result += charRom;
+    } else {
+      result += char;
+    }
+  }
+
+  // Prettify hyphens and capitalize first letter
+  result = result.replace(/-gu$/, "-gu").replace(/-si$/, "-si").replace(/-gun$/, "-gun");
+  return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
 // Helper to initialize Korean address cascading dropdowns
 function initKoreanAddressSelects(provinceSelectId, districtSelectId, initialProvince = '', initialDistrict = '') {
   const provSelect = document.getElementById(provinceSelectId);
   const distSelect = document.getElementById(districtSelectId);
   if (!provSelect || !distSelect) return;
 
+  const selectProvLabel = typeof t === 'function' ? t('addr_select_province') : '시/도 선택';
+  const selectDistLabel = typeof t === 'function' ? t('addr_select_district') : '시/군/구 선택';
+
   // Clear province dropdown
-  provSelect.innerHTML = '<option value="">시/도 선택</option>';
+  provSelect.innerHTML = `<option value="">${selectProvLabel}</option>`;
   
-  // Populate provinces
+  // Populate provinces with English names
   KOREAN_PROVINCES.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.name;
-    opt.textContent = p.name;
+    opt.textContent = `${p.name} (${romanizeKorean(p.name)})`;
     provSelect.appendChild(opt);
   });
 
@@ -94,7 +154,7 @@ function initKoreanAddressSelects(provinceSelectId, districtSelectId, initialPro
   });
 
   function updateDistrictOptions(provName, distName) {
-    distSelect.innerHTML = '<option value="">시/군/구 선택</option>';
+    distSelect.innerHTML = `<option value="">${selectDistLabel}</option>`;
     if (!provName) {
       distSelect.disabled = true;
       return;
@@ -106,7 +166,7 @@ function initKoreanAddressSelects(provinceSelectId, districtSelectId, initialPro
       provinceData.districts.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
-        opt.textContent = d;
+        opt.textContent = `${d} (${romanizeKorean(d)})`;
         distSelect.appendChild(opt);
       });
     }

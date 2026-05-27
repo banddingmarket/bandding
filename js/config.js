@@ -2,6 +2,7 @@
 const SUPABASE_URL = 'https://txctolhduubhtemmowbo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_4ploxBVivEYI8I8nPBRQuA_JXChFAx_';
 
+
 // 고객센터 라인 공식 계정 링크 (LINE Customer Center Link)
 const CUSTOMER_CENTER_LINE_URL = 'https://line.me/ti/p/GoNyhLDN6Q'; // ← 여기에 라인 고객센터 링크를 입력하세요!
 

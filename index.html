@@ -246,13 +246,13 @@
       <div id="krAddressForm" style="display: none; flex-direction: column; gap: 8px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <select id="oKrProvince" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
-            <option value="">시/도 선택</option>
+            <option value="" data-i18n="addr_select_province">시/도 선택</option>
           </select>
           <select id="oKrDistrict" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
-            <option value="">시/군/구 선택</option>
+            <option value="" data-i18n="addr_select_district">시/군/구 선택</option>
           </select>
         </div>
-        <input type="text" id="oKrDetailAddress" class="form-input" placeholder="나머지 상세 주소를 직접 입력하세요." required>
+        <input type="text" id="oKrDetailAddress" class="form-input" data-i18n="addr_kr_detail_placeholder" placeholder="나머지 상세 주소를 직접 입력하세요." required>
       </div>
 
       <!-- 태국 거주자 주소 입력 폼 -->
@@ -463,7 +463,7 @@
           <path d="M12 2C6.5 2 2 5.6 2 10c0 2.5 1.4 4.7 3.7 6-.1.7-.4 2.1-.5 2.5-.1.5.2.5.4.4.3-.2 3.1-2 3.6-2.3.9.2 1.8.3 2.8.3 5.5 0 10-3.6 10-8s-4.5-8-10-8z" fill="#ffffff"/>
           <text x="12" y="9.8" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="4.2" fill="#06C755" text-anchor="middle" dominant-baseline="middle" letter-spacing="-0.2">LINE</text>
         </svg>
-        <span>라인 문의</span>
+        <span data-i18n="btn_line_inquiry">라인 문의</span>
       </button>
       <button class="btn-submit" id="btnDetailCart" onclick="addToCart(currentProd.id)" style="margin:0; flex:1.2; background:var(--gp); padding:10px 4px; font-size:11px;" data-i18n="btn_add_to_cart">🧺 장바구니</button>
       <button class="btn-submit" id="btnDetailBuy" onclick="triggerDetailBuy()" style="margin:0; flex:1.2; padding:10px 4px; font-size:11px;" data-i18n="btn_buy_now">🛍️ 바로구매</button>
@@ -512,7 +512,7 @@
 <script src="js/thailand-addresses.js?v=1.0.2"></script>
 <script src="js/korean-addresses.js?v=1.0.2"></script>
 <script src="js/i18n.js?v=1.0.2"></script>
-<script src="js/config.js?v=1.0.2"></script>
+<script src="js/config.js?v=1.0.5"></script>
 <script>
 let products = [];
 let shops = [];
@@ -646,18 +646,18 @@ function updateShippingNotice() {
   const box = document.getElementById("shippingInfoBox");
   if (box) {
     if (currentResidence === "th") {
-      box.innerHTML = `✈️ <b>[태국 직배송]</b> 태국 내 거주자용 항공 배송으로, 배송 기간은 약 7일 소요됩니다.<br>💡 태국 직배송 배송비는 <b>1kg당 200바트</b>가 별도로 청구됩니다.`;
+      box.innerHTML = t('shipping_notice_th');
     } else {
-      box.innerHTML = `🚚 <b>[국내 배송]</b> 한국 내 거주자용 국내 배송으로, 배송 기간은 약 1~2일 소요됩니다.<br>💡 5만원 미만 주문 시 배송비 <b>3,000원</b>이 추가됩니다. (5만원 이상 무료배송)`;
+      box.innerHTML = t('shipping_notice_kr');
     }
   }
 
   const cBox = document.getElementById("cShippingInfoBox");
   if (cBox) {
     if (currentResidence === "th") {
-      cBox.innerHTML = `✈️ <b>[태국 직배송]</b> 태국 내 거주자용 항공 배송으로, 배송 기간은 약 7일 소요됩니다.<br>💡 태국 직배송 배송비는 <b>1kg당 200바트</b>가 별도로 청구됩니다.`;
+      cBox.innerHTML = t('shipping_notice_th');
     } else {
-      cBox.innerHTML = `🚚 <b>[국내 배송]</b> 한국 내 거주자용 국내 배송으로, 배송 기간은 약 1~2일 소요됩니다.<br>💡 5만원 미만 주문 시 배송비 <b>3,000원</b>이 추가됩니다. (5만원 이상 무료배송)`;
+      cBox.innerHTML = t('shipping_notice_kr');
     }
   }
 }
@@ -666,9 +666,9 @@ function updateDetailShippingNotice() {
   const el = document.getElementById("detailShippingTime");
   if (!el) return;
   if (currentResidence === "th") {
-    el.innerHTML = "✈️ 태국 거주자: 한국 직배송 약 7일 소요";
+    el.innerHTML = t('detail_shipping_th');
   } else {
-    el.innerHTML = "🚚 한국 거주자: 국내 택배 배송 약 1~2일 소요";
+    el.innerHTML = t('detail_shipping_kr');
   }
 }
 
@@ -2134,8 +2134,10 @@ async function sendChatMessage() {
 
 // Telegram Message Sync (Client-side outgoing)
 async function syncMessageToTelegram(roomId, senderId, messageText, messageType) {
+  console.log('[Telegram] syncMessageToTelegram called. RoomID:', roomId, 'Token:', typeof TELEGRAM_BOT_TOKEN !== 'undefined' ? (TELEGRAM_BOT_TOKEN ? '***SET***' : 'EMPTY') : 'UNDEFINED', 'ChatID:', typeof TELEGRAM_CHAT_ID !== 'undefined' ? (TELEGRAM_CHAT_ID || 'EMPTY') : 'UNDEFINED');
   if (typeof TELEGRAM_BOT_TOKEN === 'undefined' || !TELEGRAM_BOT_TOKEN || 
       typeof TELEGRAM_CHAT_ID === 'undefined' || !TELEGRAM_CHAT_ID) {
+    console.warn('[Telegram] 봇 토큰 또는 챗 ID가 비어있어서 동기화를 건너뜁니다.');
     return;
   }
 
@@ -2145,12 +2147,14 @@ async function syncMessageToTelegram(roomId, senderId, messageText, messageType)
       .eq('id', roomId)
       .single();
 
-    if (roomErr || !room) return;
+    if (roomErr || !room) { console.error('[Telegram] chat_rooms 조회 실패:', roomErr); return; }
 
     let threadId = room.telegram_thread_id;
 
+    console.log('[Telegram] 기존 threadId:', threadId);
     // Create topic thread if not exists
     if (!threadId) {
+      console.log('[Telegram] 새 토픽 생성 시도...');
       const { data: buyer } = await supabase.from('profiles')
         .select('name')
         .eq('id', room.buyer_id)
@@ -2175,8 +2179,9 @@ async function syncMessageToTelegram(roomId, senderId, messageText, messageType)
         await supabase.from('chat_rooms')
           .update({ telegram_thread_id: threadId })
           .eq('id', roomId);
+        console.log('[Telegram] 토픽 생성 성공! threadId:', threadId);
       } else {
-        console.error("Telegram topic creation failed:", topicData);
+        console.error('[Telegram] 토픽 생성 실패 응답:', JSON.stringify(topicData));
         return;
       }
     }
@@ -2195,6 +2200,20 @@ async function syncMessageToTelegram(roomId, senderId, messageText, messageType)
           caption: `🖼️ [${senderLabel}] 사진 업로드`
         })
       });
+      
+      const resData = await sendRes.clone().json();
+      if (!resData.ok) {
+        console.warn('[Telegram] sendPhoto failed, falling back to sendMessage:', resData.description);
+        sendRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            message_thread_id: threadId,
+            text: `🖼️ [${senderLabel}] 사진 링크: ${messageText}`
+          })
+        });
+      }
     } else if (messageType === 'video') {
       sendRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendVideo`, {
         method: 'POST',
@@ -2206,6 +2225,21 @@ async function syncMessageToTelegram(roomId, senderId, messageText, messageType)
           caption: `🎥 [${senderLabel}] 동영상 업로드`
         })
       });
+      
+      const resData = await sendRes.clone().json();
+      if (!resData.ok) {
+        console.warn('[Telegram] sendVideo failed, falling back to sendMessage:', resData.description);
+        sendRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            message_thread_id: threadId,
+            text: `🎥 [${senderLabel}] 동영상 링크: ${messageText}`
+          })
+        });
+      }
+    }
     } else {
       sendRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
