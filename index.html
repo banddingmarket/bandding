@@ -69,13 +69,8 @@
       <div class="sec-head">
         <h2 class="sec-title" data-i18n="all_categories">최신 상품</h2>
       </div>
-      <div class="cat-filter">
+      <div class="cat-filter" id="mainCatFilter">
         <button class="cat-btn active" data-i18n="cat_all" onclick="filterCat(this,'all')">전체</button>
-        <button class="cat-btn" data-i18n="cat_food" onclick="filterCat(this,'Food')">식품</button>
-        <button class="cat-btn" data-i18n="cat_cosmetics" onclick="filterCat(this,'Cosmetics')">화장품</button>
-        <button class="cat-btn" data-i18n="cat_clothing" onclick="filterCat(this,'Clothing')">의류</button>
-        <button class="cat-btn" data-i18n="cat_electronics" onclick="filterCat(this,'Electronics')">전자제품</button>
-        <button class="cat-btn" data-i18n="cat_other" onclick="filterCat(this,'Other')">기타</button>
       </div>
       <div class="products-grid" id="prodsGrid">
         <div class="empty" style="grid-column:1/-1;">
@@ -97,21 +92,15 @@
       <div class="search-row" style="margin-bottom:14px;">
         <input type="text" class="search-in" id="searchKeyword" data-i18n="search_placeholder" placeholder="모델명 검색..." oninput="triggerSearch()">
       </div>
-      <div style="margin-bottom:12px; display:flex; align-items:center; gap:10px;">
-        <span style="font-size:12px; color:var(--t2); font-weight:700; min-width:60px;" data-i18n="search_location_label">지역 필터:</span>
-        <select class="form-input" id="searchProvince" style="flex:1; padding:8px 12px; font-size:12px;" onchange="triggerSearch()">
-          <!-- Populated dynamically -->
-          <option value="all" data-i18n="search_all_locations">전체 지역</option>
-        </select>
+      
+      <div class="cat-filter" id="searchCatFilter" style="margin-bottom:16px;">
+        <!-- Will be populated dynamically -->
       </div>
-      <div style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
-        <span style="font-size:12px; color:var(--t2); font-weight:700; min-width:60px;" data-i18n="budget_range">예산 범위:</span>
-        <div style="display:flex; align-items:center; gap:6px; flex:1;">
-          <input type="number" class="form-input" id="searchMinPrice" data-i18n="min_price" placeholder="최소 가격" style="flex:1; padding:8px 10px; font-size:12px;" oninput="triggerSearch()">
-          <span style="color:var(--t3); font-size:12px;">~</span>
-          <input type="number" class="form-input" id="searchMaxPrice" data-i18n="max_price" placeholder="최대 가격" style="flex:1; padding:8px 10px; font-size:12px;" oninput="triggerSearch()">
-        </div>
+      
+      <div class="cat-filter" id="searchSubCatFilter" style="margin-bottom:16px; display:none;">
+        <!-- Will be populated dynamically when a main category is selected -->
       </div>
+
 
       <!-- Search Results Grid -->
       <div class="products-grid" id="searchResultsGrid">
@@ -519,6 +508,9 @@ let shops = [];
 let currentProd = null;
 let selectedPaymentMethod = 'online';
 let activeShopFilter = 'all';
+let activeSearchCat = 'all';
+let categoriesList = [];
+let mainCategories = [];
 let currentUserId = null;
 
 // Cart state: Array<{ productId: string, quantity: number }>
@@ -789,16 +781,15 @@ async function init() {
     shops = profilesList || [];
     renderShopLogoList(shops);
     renderShopsListView(shops);
-    populateLocationFilter(shops);
   } catch (err) {
     console.error("Load shops failed:", err);
     renderShopLogoList([]);
     renderShopsListView([]);
-    populateLocationFilter([]);
   }
 
   // 5. Products
   try {
+    await loadMainCategories();
     await loadProducts('all');
   } catch (err) {
     console.warn("Supabase initialization skipped or failed (likely local file:// protocol limits):", err);
@@ -883,27 +874,177 @@ function renderShopsListView(list) {
   }).join('');
 }
 
-// Populate location filter dropdown in search tab
-function populateLocationFilter(list) {
-  const select = document.getElementById('searchProvince');
-  if (!select) return;
-  const provinces = [...new Set(list.map(s => s.location_province).filter(Boolean))];
+function getCategoryDisplayName(nameOrId) {
+  if (!nameOrId) return t('cat_other');
   
-  let options = `<option value="all">${t('search_all_locations')}</option>`;
-  provinces.forEach(p => {
-    options += `<option value="${p}">${p}</option>`;
-  });
-  select.innerHTML = options;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  let name = nameOrId;
+  if (uuidRegex.test(nameOrId)) {
+    const catObj = categoriesList.find(c => c.id === nameOrId);
+    if (catObj) {
+      if (catObj.parent_id) {
+        const parentObj = categoriesList.find(c => c.id === catObj.parent_id);
+        name = parentObj ? `${parentObj.name} > ${catObj.name}` : catObj.name;
+      } else {
+        name = catObj.name;
+      }
+    } else {
+      return t('cat_other');
+    }
+  }
+
+  const mapping = {
+    '식품': 'cat_food',
+    'Food': 'cat_food',
+    '화장품': 'cat_cosmetics',
+    'Cosmetics': 'cat_cosmetics',
+    '의류': 'cat_clothing',
+    'Clothing': 'cat_clothing',
+    '전자제품': 'cat_electronics',
+    'Electronics': 'cat_electronics',
+    '기타': 'cat_other',
+    'Other': 'cat_other'
+  };
+  const mainPart = name.split('>')[0].trim();
+  const key = mapping[mainPart];
+  if (key) {
+    const localizedMain = t(key);
+    const subPart = name.includes('>') ? name.substring(name.indexOf('>')) : '';
+    return localizedMain + subPart;
+  }
+  return name;
+}
+
+function renderCategoryTabs() {
+  const mainContainer = document.getElementById('mainCatFilter');
+  const searchContainer = document.getElementById('searchCatFilter');
+  
+  if (mainContainer) {
+    const activeBtn = mainContainer.querySelector('.cat-btn.active');
+    const activeId = activeBtn ? activeBtn.getAttribute('data-cat-id') || 'all' : 'all';
+    
+    let html = `<button class="cat-btn ${activeId === 'all' ? 'active' : ''}" data-cat-id="all" onclick="filterCat(this,'all')">${t('cat_all')}</button>`;
+    
+    html += mainCategories.map(c => {
+      const displayName = getCategoryDisplayName(c.name);
+      return `<button class="cat-btn ${activeId === c.id ? 'active' : ''}" data-cat-id="${c.id}" onclick="filterCat(this, '${c.id}')">${displayName}</button>`;
+    }).join('');
+    
+    mainContainer.innerHTML = html;
+  }
+  
+  if (searchContainer) {
+    let highlightParentId = 'all';
+    if (activeSearchCat !== 'all') {
+      const catObj = categoriesList.find(c => c.id === activeSearchCat);
+      if (catObj) {
+        highlightParentId = catObj.parent_id || catObj.id;
+      }
+    }
+
+    let html = `<button class="cat-btn ${highlightParentId === 'all' ? 'active' : ''}" onclick="filterSearchCat(this,'all')">${t('cat_all')}</button>`;
+    
+    html += mainCategories.map(c => {
+      const displayName = getCategoryDisplayName(c.name);
+      return `<button class="cat-btn ${highlightParentId === c.id ? 'active' : ''}" onclick="filterSearchCat(this, '${c.id}')">${displayName}</button>`;
+    }).join('');
+    
+    searchContainer.innerHTML = html;
+  }
+}
+
+function renderSearchSubCategoryTabs(parentCatId) {
+  const subContainer = document.getElementById('searchSubCatFilter');
+  if (!subContainer) return;
+
+  if (parentCatId === 'all') {
+    subContainer.style.display = 'none';
+    subContainer.innerHTML = '';
+    return;
+  }
+
+  const subCats = categoriesList.filter(c => c.parent_id === parentCatId);
+  if (subCats.length === 0) {
+    subContainer.style.display = 'none';
+    subContainer.innerHTML = '';
+    return;
+  }
+
+  subContainer.style.display = 'flex';
+  
+  const parentObj = categoriesList.find(c => c.id === parentCatId);
+  const parentName = parentObj ? getCategoryDisplayName(parentObj.name) : '';
+  
+  let html = `<button class="cat-btn ${activeSearchCat === parentCatId ? 'active' : ''}" style="font-size: 12px; padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border);" onclick="filterSearchSubCat(this, '${parentCatId}')">${t('cat_all')} (${parentName})</button>`;
+  
+  html += subCats.map(sc => {
+    const isSelected = activeSearchCat === sc.id;
+    return `<button class="cat-btn ${isSelected ? 'active' : ''}" style="font-size: 12px; padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border);" onclick="filterSearchSubCat(this, '${sc.id}')">${sc.name}</button>`;
+  }).join('');
+
+  subContainer.innerHTML = html;
+}
+
+async function loadMainCategories() {
+  try {
+    const { data, error } = await supabase.from('categories')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    categoriesList = data || [];
+    mainCategories = categoriesList.filter(c => !c.parent_id);
+    renderCategoryTabs();
+    
+    let parentId = 'all';
+    if (activeSearchCat !== 'all') {
+      const catObj = categoriesList.find(c => c.id === activeSearchCat);
+      if (catObj) {
+        parentId = catObj.parent_id || catObj.id;
+      }
+    }
+    renderSearchSubCategoryTabs(parentId);
+  } catch (err) {
+    console.error("Failed to load main categories:", err);
+    categoriesList = [];
+    mainCategories = [];
+    renderCategoryTabs();
+  }
 }
 
 // Load products
 async function loadProducts(cat) {
   let q = supabase.from('products')
-    .select('id, title, description, price, images, category, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address)')
+    .select('id, title, description, price, images, category, category_id, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address)')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
   
-  if (cat !== 'all') q = q.eq('category', cat);
+  if (cat !== 'all') {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(cat)) {
+      const catObj = categoriesList.find(c => c.id === cat);
+      if (catObj) {
+        if (!catObj.parent_id) {
+          const subCats = categoriesList.filter(c => c.parent_id === cat);
+          const catIds = [cat, ...subCats.map(c => c.id)];
+          const parentName = catObj.name || '';
+          const escapedParentName = `"${parentName.replace(/"/g, '\\"')}"`;
+          const ilikePattern = `"${parentName.replace(/"/g, '\\"')} > %"`;
+          q = q.or(`category_id.in.(${catIds.map(id => `"${id}"`).join(',')}),category.eq.${escapedParentName},category.ilike.${ilikePattern}`);
+        } else {
+          const subName = catObj.name || '';
+          const parentObj = categoriesList.find(c => c.id === catObj.parent_id);
+          const fullText = parentObj ? `${parentObj.name} > ${subName}` : subName;
+          const escapedFullText = `"${fullText.replace(/"/g, '\\"')}"`;
+          q = q.or(`category_id.eq.${cat},category.eq.${escapedFullText}`);
+        }
+      } else {
+        q = q.eq('category_id', cat);
+      }
+    } else {
+      q = q.eq('category', cat);
+    }
+  }
   if (activeShopFilter !== 'all') q = q.eq('seller_id', activeShopFilter);
   
   const { data } = await q;
@@ -926,7 +1067,6 @@ function renderProds(list, elementId) {
     const storeBadge = isSubsidiary ? 'meta-subsidiary' : 'meta-partner';
     const conditionText = t('condition_' + (p.condition ? p.condition.toLowerCase().replace(' ', '') : 's'));
     
-    // Fallback translations in case of cached i18n.js
     let addCartLabel = t('btn_add_to_cart');
     if (addCartLabel === 'btn_add_to_cart') {
       addCartLabel = (typeof currentLang !== 'undefined' && currentLang === 'ko') ? '🧺 장바구니' : '🧺 ใส่รถเข็น';
@@ -936,11 +1076,13 @@ function renderProds(list, elementId) {
       buyLabel = (typeof currentLang !== 'undefined' && currentLang === 'ko') ? '🛒 구매하기' : '🛒 สั่งซื้อ';
     }
 
+    const resolvedCatId = p.category_id || p.category;
+
     return `
       <div class="product-card" onclick="openProductDetail('${p.id}')">
         <div class="p-img">
-          ${p.images?.[0] ? `<img src="${p.images[0]}" alt="${p.title}" loading="lazy">` : catEmoji(p.category)}
-          <div class="p-badge">${t('cat_' + (p.category ? p.category.toLowerCase() : 'other')) || p.category}</div>
+          ${p.images?.[0] ? `<img src="${p.images[0]}" alt="${p.title}" loading="lazy">` : catEmoji(resolvedCatId)}
+          <div class="p-badge">${getCategoryDisplayName(resolvedCatId)}</div>
         </div>
         <div class="p-info">
           <div class="p-title" style="font-weight:700; height:38px; overflow:hidden;">${p.title}</div>
@@ -966,31 +1108,51 @@ function renderProds(list, elementId) {
 // Trigger real-time search with filters
 async function triggerSearch() {
   const kw = document.getElementById('searchKeyword').value.trim().toLowerCase();
-  const prov = document.getElementById('searchProvince').value;
-  const minPrice = Number(document.getElementById('searchMinPrice').value) || 0;
-  const maxPrice = Number(document.getElementById('searchMaxPrice').value) || Infinity;
   const grid = document.getElementById('searchResultsGrid');
+  if (!grid) return;
   
   let query = supabase.from('products')
-    .select('id, title, description, price, images, category, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address)')
+    .select('id, title, description, price, images, category, category_id, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address)')
     .eq('status', 'active');
     
+  if (activeSearchCat !== 'all') {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(activeSearchCat)) {
+      const catObj = categoriesList.find(c => c.id === activeSearchCat);
+      if (catObj) {
+        if (!catObj.parent_id) {
+          const subCats = categoriesList.filter(c => c.parent_id === activeSearchCat);
+          const catIds = [activeSearchCat, ...subCats.map(c => c.id)];
+          const parentName = catObj.name || '';
+          const escapedParentName = `"${parentName.replace(/"/g, '\\"')}"`;
+          const ilikePattern = `"${parentName.replace(/"/g, '\\"')} > %"`;
+          query = query.or(`category_id.in.(${catIds.map(id => `"${id}"`).join(',')}),category.eq.${escapedParentName},category.ilike.${ilikePattern}`);
+        } else {
+          const subName = catObj.name || '';
+          const parentObj = categoriesList.find(c => c.id === catObj.parent_id);
+          const fullText = parentObj ? `${parentObj.name} > ${subName}` : subName;
+          const escapedFullText = `"${fullText.replace(/"/g, '\\"')}"`;
+          query = query.or(`category_id.eq.${activeSearchCat},category.eq.${escapedFullText}`);
+        }
+      } else {
+        query = query.eq('category_id', activeSearchCat);
+      }
+    } else {
+      query = query.eq('category', activeSearchCat);
+    }
+  }
+  
   const { data } = await query;
   let results = data || [];
   
   if (kw) {
-    results = results.filter(p => 
-      p.title.toLowerCase().includes(kw) || 
-      (p.description && p.description.toLowerCase().includes(kw)) ||
-      (p.category && p.category.toLowerCase().includes(kw))
-    );
+    results = results.filter(p => {
+      const catName = getCategoryDisplayName(p.category_id || p.category) || '';
+      return p.title.toLowerCase().includes(kw) || 
+             (p.description && p.description.toLowerCase().includes(kw)) ||
+             catName.toLowerCase().includes(kw);
+    });
   }
-  
-  if (prov !== 'all') {
-    results = results.filter(p => p.profiles?.location_province === prov);
-  }
-  
-  results = results.filter(p => p.price >= minPrice && p.price <= maxPrice);
   
   if (results.length === 0) {
     grid.innerHTML = `<div class="empty" style="grid-column:1/-1;"><div class="empty-ico">🔍</div><div class="empty-ttl">${t('search_no_results')}</div></div>`;
@@ -999,11 +1161,38 @@ async function triggerSearch() {
   }
 }
 
-// Category filter action
+// Category filter action (Main Shop Tab)
 function filterCat(el, cat) {
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  const container = document.getElementById('mainCatFilter');
+  if (container) {
+    container.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  }
   el.classList.add('active');
   loadProducts(cat);
+}
+
+// Category filter action (Search Tab)
+function filterSearchCat(el, catId) {
+  const container = document.getElementById('searchCatFilter');
+  if (container) {
+    container.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  }
+  el.classList.add('active');
+  activeSearchCat = catId;
+  
+  // Render and show subcategory buttons
+  renderSearchSubCategoryTabs(catId);
+  triggerSearch();
+}
+
+function filterSearchSubCat(el, subCatId) {
+  const container = document.getElementById('searchSubCatFilter');
+  if (container) {
+    container.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  }
+  el.classList.add('active');
+  activeSearchCat = subCatId;
+  triggerSearch();
 }
 
 // Tab Switch Logic
@@ -1025,6 +1214,14 @@ function switchTab(tabId) {
   }
 
   if (tabId === 'search') {
+    let parentId = 'all';
+    if (activeSearchCat !== 'all') {
+      const catObj = categoriesList.find(c => c.id === activeSearchCat);
+      if (catObj) {
+        parentId = catObj.parent_id || catObj.id;
+      }
+    }
+    renderSearchSubCategoryTabs(parentId);
     triggerSearch();
   }
   
@@ -1690,13 +1887,35 @@ function avatarEmoji(name) {
 }
 
 function catEmoji(c) {
-  return { Food: '🍏', Cosmetics: '💄', Clothing: '👕', Electronics: '⚡', Other: '📦' }[c] || '📦';
+  if (!c) return '📦';
+  let name = c;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(c)) {
+    const catObj = categoriesList.find(cat => cat.id === c);
+    name = catObj ? catObj.name : '';
+  }
+  if (name.includes('식품') || name.toLowerCase().includes('food')) return '🍏';
+  if (name.includes('화장품') || name.toLowerCase().includes('cosmetic')) return '💄';
+  if (name.includes('의류') || name.toLowerCase().includes('cloth')) return '👕';
+  if (name.includes('전자제품') || name.toLowerCase().includes('electr')) return '⚡';
+  return '📦';
 }
 
 // Custom Language translation handler
 window.addEventListener('languageChanged', (e) => {
   // Re-render components
   renderProds(products, 'prodsGrid');
+  renderCategoryTabs();
+  
+  let parentId = 'all';
+  if (activeSearchCat !== 'all') {
+    const catObj = categoriesList.find(c => c.id === activeSearchCat);
+    if (catObj) {
+      parentId = catObj.parent_id || catObj.id;
+    }
+  }
+  renderSearchSubCategoryTabs(parentId);
+  
   triggerSearch();
   updateShippingNotice();
   if (currentProd) updateDetailShippingNotice();
@@ -1710,7 +1929,7 @@ async function openProductDetail(prodId) {
   let p = null;
   try {
     const { data } = await supabase.from('products')
-      .select('id, title, description, price, images, category, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address, location_coords, profile_image)')
+      .select('id, title, description, price, images, category, category_id, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address, location_coords, profile_image)')
       .eq('id', prodId).single();
     p = data;
   } catch (err) {
@@ -1727,7 +1946,7 @@ async function openProductDetail(prodId) {
   document.getElementById('detailTitle').textContent = p.title;
   updateDetailShippingNotice();
   document.getElementById('detailPrice').innerHTML = formatPrice(p.price);
-  document.getElementById('detailCat').textContent = p.category || 'Mobile';
+  document.getElementById('detailCat').textContent = getCategoryDisplayName(p.category_id || p.category) || 'Mobile';
   
   const conditionText = t('condition_' + (p.condition ? p.condition.toLowerCase().replace(' ', '') : 's'));
   document.getElementById('detailCondition').textContent = `⭐ ${conditionText}`;
@@ -1804,7 +2023,7 @@ async function openProductDetail(prodId) {
   } else {
     slidesContainer.innerHTML = `
       <div style="min-width:100%; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:72px; background:var(--bg2);">
-        ${catEmoji(p.category)}
+        ${catEmoji(p.category_id || p.category)}
       </div>
     `;
     document.getElementById('detailPrevBtn').style.display = 'none';
@@ -2566,6 +2785,7 @@ async function markMessagesAsRead(roomId, userId) {
 window.addEventListener('languageChanged', async () => {
   renderShopLogoList(shops);
   renderShopsListView(shops);
+  if (typeof renderCategoryTabs === 'function') renderCategoryTabs();
   renderProds(products, 'prodsGrid');
   if (document.getElementById('searchResultsGrid')) {
     triggerSearch();
