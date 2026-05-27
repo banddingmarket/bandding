@@ -31,6 +31,9 @@ const TRANSLATIONS = {
     addr_select_province: "시/도 선택",
     addr_select_district: "시/군/구 선택",
     addr_kr_detail_placeholder: "나머지 상세 주소를 직접 입력하세요.",
+    bank_transfer_notice: "💡 <b>[온라인 송금 안내]</b><br>본사 계좌로 100% 입금이 확인되면 판매자가 배송을 시작합니다.<br><br><b>🏦 입금 계좌:</b><br>국민은행 437601-01-382570<br>(예금주: 주식회사 반띵마켓)",
+    btn_copy_bank_account: "📋 계좌번호 복사",
+    toast_bank_account_copied: "📋 계좌번호가 복사되었습니다!",
 
     
     // Bottom Nav Tabs
@@ -307,6 +310,9 @@ const TRANSLATIONS = {
     addr_select_province: "เลือกจังหวัด (Province)",
     addr_select_district: "เลือกเขต/อำเภอ (District)",
     addr_kr_detail_placeholder: "กรุณากรอกที่อยู่โดยละเอียดที่เหลือ (เช่น บ้านเลขที่, ถนน)",
+    bank_transfer_notice: "💡 <b>[คำแนะนำในการโอนเงินออนไลน์]</b><br>ผู้ขายจะเริ่มจัดส่งสินค้าหลังจากได้รับการยืนยันการโอนเงิน 100% เข้าบัญชีของบริษัท<br><br><b>🏦 บัญชีเงินฝาก:</b><br>ธนาคารกุกมิน (KB Kookmin Bank) 437601-01-382570<br>(ชื่อบัญชี: บจก. แบนดิงมาร์เก็ต / Bandding Market Co., Ltd.)",
+    btn_copy_bank_account: "📋 คัดลอกเลขบัญชี",
+    toast_bank_account_copied: "📋 คัดลอกเลขบัญชีเรียบร้อยแล้ว!",
     
     // Bottom Nav Tabs
     tab_shop: "ช้อป",

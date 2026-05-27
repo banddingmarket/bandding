@@ -1047,7 +1047,7 @@ function setPaymentMethod(method) {
 function copyBankAccount() {
   const accountNum = "437601-01-382570";
   navigator.clipboard.writeText(accountNum).then(() => {
-    showToast("📋 계좌번호가 복사되었습니다!", "success");
+    showToast(t('toast_bank_account_copied'), "success");
   }).catch(() => {
     const el = document.createElement('textarea');
     el.value = accountNum;
@@ -1055,24 +1055,27 @@ function copyBankAccount() {
     el.select();
     document.execCommand('copy');
     document.body.removeChild(el);
-    showToast("📋 계좌번호가 복사되었습니다!", "success");
+    showToast(t('toast_bank_account_copied'), "success");
   });
 }
 
 function updatePaymentNotice() {
-  if (!currentProd) return;
   const infoBox = document.getElementById('paymentInfoBox');
-  if (!infoBox) return;
-
-  infoBox.innerHTML = `
-    💡 <b>[온라인 송금 안내]</b><br>
-    본사 계좌로 100% 입금이 확인되면 판매자가 배송을 시작합니다.<br><br>
-    <b>🏦 입금 계좌:</b><br>
-    국민은행 437601-01-382570<br>(예금주: 주식회사 반띵마켓)
+  const cInfoBox = document.getElementById('cPaymentInfoBox');
+  
+  const noticeHtml = `
+    ${t('bank_transfer_notice')}
     <button onclick="copyBankAccount()" class="btn-sm btn-purple" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; background: var(--gp); color: #fff; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; margin-top: 6px; font-weight: bold;">
-      📋 계좌번호 복사
+      ${t('btn_copy_bank_account')}
     </button>
   `;
+
+  if (infoBox) {
+    infoBox.innerHTML = noticeHtml;
+  }
+  if (cInfoBox) {
+    cInfoBox.innerHTML = noticeHtml;
+  }
 }
 
 // Open Order Modal
@@ -2239,7 +2242,6 @@ async function syncMessageToTelegram(roomId, senderId, messageText, messageType)
           })
         });
       }
-    }
     } else {
       sendRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
@@ -2568,6 +2570,8 @@ window.addEventListener('languageChanged', async () => {
   if (document.getElementById('searchResultsGrid')) {
     triggerSearch();
   }
+  updatePaymentNotice();
+  updateShippingNotice();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
     if (typeof loadMyInquiries === 'function') await loadMyInquiries();
