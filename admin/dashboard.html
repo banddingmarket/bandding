@@ -1036,6 +1036,11 @@ function showPage(pageId, btn) {
   document.getElementById('page-buyers').style.display = pageId === 'buyers' ? 'block' : 'none';
   document.getElementById('page-products').style.display = pageId === 'products' ? 'block' : 'none';
   document.getElementById('page-orders').style.display = pageId === 'orders' ? 'block' : 'none';
+  document.getElementById('page-chat-rooms').style.display = pageId === 'chat-rooms' ? 'block' : 'none';
+  document.getElementById('page-media').style.display = pageId === 'media' ? 'block' : 'none';
+
+  if (pageId === 'chat-rooms') loadChatRoomsAdmin();
+  if (pageId === 'media') loadChatMediaAdmin();
 }
 
 function doLogout() {
@@ -1083,6 +1088,196 @@ function openBuyerOrders(buyerId, ordersJson, buyerName) {
 
 function closeBuyerOrdersModal() {
   document.getElementById('buyerOrdersModal').classList.remove('open');
+}
+
+// ===== ADMIN CHAT MANAGEMENT =====
+async function loadChatRoomsAdmin() {
+  const tbody = document.getElementById('chatRoomsTbl');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr>';
+  
+  try {
+    const { data: rooms, error } = await supabase.from('chat_rooms')
+      .select('*, products(title), buyer:profiles!chat_rooms_buyer_id_fkey(name), seller:profiles!chat_rooms_seller_id_fkey(store_name, name)')
+      .order('updated_at', { ascending: false });
+      
+    if (error) throw error;
+    
+    if (!rooms || rooms.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">대화방이 없습니다.</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = rooms.map(r => {
+      const buyerName = r.buyer?.name || '구매자';
+      const sellerName = r.seller?.store_name || r.seller?.name || '판매자';
+      const prodTitle = r.products?.title || '상품';
+      const date = new Date(r.updated_at).toLocaleString('ko-KR');
+      return `
+        <tr>
+          <td><code style="font-size:11px;">${r.id}</code></td>
+          <td><strong>${prodTitle}</strong></td>
+          <td>${buyerName}</td>
+          <td>${sellerName}</td>
+          <td style="font-size:12px; color:var(--t3);">${date}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-sm btn-purple" onclick="openChatHistory('${r.id}', '${buyerName}', '${sellerName}')">💬 대화보기</button>
+              <button class="btn-sm btn-red" onclick="deleteChatRoom('${r.id}')">🗑️ 삭제</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--red);">로드 실패: ${err.message}</td></tr>`;
+  }
+}
+
+async function openChatHistory(roomId, buyerName, sellerName) {
+  document.getElementById('chatHistoryTitle').textContent = `💬 ${buyerName} & ${sellerName} 대화 내역`;
+  const body = document.getElementById('chatHistoryBody');
+  body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--t3);">불러오는 중…</div>';
+  document.getElementById('chatHistoryModal').classList.add('open');
+  
+  try {
+    const { data: msgs, error } = await supabase.from('chat_messages')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true });
+      
+    if (error) throw error;
+    
+    if (!msgs || msgs.length === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--t3);">메시지가 없습니다.</div>';
+      return;
+    }
+    
+    body.innerHTML = msgs.map(m => {
+      const time = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const isMyProfile = myProfile && m.sender_id === myProfile.id;
+      let senderName = isMyProfile ? '나(Admin)' : (m.sender_id === msgs[0].sender_id ? buyerName : sellerName);
+      
+      let contentHtml = '';
+      if (m.message_type === 'image') {
+        contentHtml = `<img src="${m.message}" style="max-width:150px; max-height:150px; border-radius:8px; cursor:zoom-in;" onclick="window.open('${m.message}')">`;
+      } else if (m.message_type === 'video') {
+        contentHtml = `<video src="${m.message}" controls style="max-width:150px; max-height:150px; border-radius:8px;"></video>`;
+      } else {
+        contentHtml = m.message;
+      }
+      
+      return `
+        <div style="padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid var(--border); font-size:13px;">
+          <div style="font-weight:700; font-size:11px; margin-bottom:4px; display:flex; justify-content:space-between;">
+            <span style="color:var(--purple-l);">${senderName}</span>
+            <span style="color:var(--t3); font-weight:normal;">${time}</span>
+          </div>
+          <div style="color:var(--t1); word-break:break-all;">${contentHtml}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red);">대화 불러오기 실패: ${err.message}</div>`;
+  }
+}
+
+function closeChatHistoryModal() {
+  document.getElementById('chatHistoryModal').classList.remove('open');
+}
+
+async function deleteChatRoom(roomId) {
+  if (!confirm("정말 이 대화방을 삭제하시겠습니까? 관련 메시지가 모두 영구 삭제됩니다.")) return;
+  try {
+    const { error } = await supabase.from('chat_rooms').delete().eq('id', roomId);
+    if (error) throw error;
+    showToast('🗑️ 대화방이 성공적으로 삭제되었습니다.', 'success');
+    await loadChatRoomsAdmin();
+  } catch (err) {
+    showToast('❌ 삭제 실패: ' + err.message, 'error');
+  }
+}
+
+async function loadChatMediaAdmin() {
+  const tbody = document.getElementById('mediaTbl');
+  const countBadge = document.getElementById('mediaCount');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr>';
+  
+  try {
+    const { data: msgs, error } = await supabase.from('chat_messages')
+      .select('*, sender:profiles!chat_messages_sender_id_fkey(name, store_name), room:chat_rooms(buyer:profiles!chat_rooms_buyer_id_fkey(name), seller:profiles!chat_rooms_seller_id_fkey(store_name, name))')
+      .in('message_type', ['image', 'video'])
+      .order('created_at', { ascending: true });
+      
+    if (error) throw error;
+    
+    const count = msgs ? msgs.length : 0;
+    if (countBadge) countBadge.textContent = `미디어 ${count}개`;
+    
+    if (count === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">채팅 미디어 파일이 없습니다.</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = msgs.map(m => {
+      const typeLabel = m.message_type === 'image' ? '🖼️ 이미지' : '🎥 동영상';
+      const senderName = m.sender?.name || m.sender?.store_name || '알수없음';
+      
+      const buyerName = m.room?.buyer?.name || '구매자';
+      const sellerName = m.room?.seller?.store_name || m.room?.seller?.name || '판매자';
+      const roomInfo = `${buyerName} 💬 ${sellerName}`;
+      const date = new Date(m.created_at).toLocaleString('ko-KR');
+      
+      let mediaPreview = '';
+      if (m.message_type === 'image') {
+        mediaPreview = `<img src="${m.message}" style="max-width:80px; max-height:80px; border-radius:6px; object-fit:cover; cursor:zoom-in;" onclick="window.open('${m.message}')">`;
+      } else {
+        mediaPreview = `<video src="${m.message}" style="max-width:80px; max-height:80px; border-radius:6px; object-fit:cover;" controls></video>`;
+      }
+      
+      return `
+        <tr>
+          <td style="padding: 8px;">${mediaPreview}</td>
+          <td><span class="badge ${m.message_type === 'image' ? 'bg-blue' : 'bg-purple'}">${typeLabel}</span></td>
+          <td style="font-size:12px; font-weight:700;">${roomInfo}</td>
+          <td>${senderName}</td>
+          <td style="font-size:12px; color:var(--t3);">${date}</td>
+          <td>
+            <button class="btn-sm btn-red" onclick="deleteChatMedia('${m.id}', '${m.message}')">🗑️ 삭제</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--red);">로드 실패: ${err.message}</td></tr>`;
+  }
+}
+
+async function deleteChatMedia(messageId, mediaUrl) {
+  if (!confirm("정말 이 미디어 메시지를 삭제하시겠습니까? 메시지와 저장소(Storage) 파일이 모두 영구 삭제됩니다.")) return;
+  
+  try {
+    if (mediaUrl && mediaUrl.includes('/public/chat_media/')) {
+      const parts = mediaUrl.split('/public/chat_media/');
+      if (parts.length > 1) {
+        const storagePath = parts[1];
+        const { error: storeErr } = await supabase.storage.from('chat_media').remove([storagePath]);
+        if (storeErr) console.warn("Storage delete warn:", storeErr.message);
+      }
+    }
+    
+    const { error } = await supabase.from('chat_messages').delete().eq('id', messageId);
+    if (error) throw error;
+    
+    showToast('🗑️ 미디어 메시지가 성공적으로 삭제되었습니다.', 'success');
+    await loadChatMediaAdmin();
+  } catch (err) {
+    showToast('❌ 삭제 실패: ' + err.message, 'error');
+  }
 }
 
 // Sync i18n placeholders and load everything
