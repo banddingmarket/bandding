@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   is_approved       BOOLEAN NOT NULL DEFAULT false,
   partner_type      TEXT DEFAULT 'partner' CHECK (partner_type IN ('subsidiary', 'partner')),
   location_province TEXT DEFAULT 'Bangkok',
+  location_district TEXT,
   location_address  TEXT,
   location_coords   TEXT,
   commission_rate   DECIMAL(5,2) DEFAULT 10.00,
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   tracking_company  TEXT,
   tracking_number   TEXT,
   deposit_confirmed BOOLEAN NOT NULL DEFAULT false,
+  cart_id           UUID,
   created_at        TIMESTAMPTZ DEFAULT NOW(),
   updated_at        TIMESTAMPTZ DEFAULT NOW()
 );
@@ -78,6 +80,7 @@ CREATE TABLE IF NOT EXISTS public.chat_messages (
   sender_id    UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   message      TEXT NOT NULL,
   message_type TEXT DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'video')),
+  is_read      BOOLEAN DEFAULT false,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -243,6 +246,11 @@ CREATE TRIGGER trg_manage_stock_on_order
   AFTER INSERT OR UPDATE ON public.orders
   FOR EACH ROW
   EXECUTE FUNCTION public.manage_stock_on_order();
+
+-- ============================================================
+-- CHAT_MESSAGES 테이블 실시간(Realtime) 통신 활성화 설정
+-- ============================================================
+ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
 
 -- ============================================================
 -- DB 세팅 완료!

@@ -423,6 +423,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../js/thailand-addresses.js"></script>
+<script src="../js/korean-addresses.js"></script>
 <script src="../js/config.js"></script>
 <script>
 async function init() {
@@ -707,7 +708,7 @@ async function saveProduct() {
       removedImages = [];
     }
   } else {
-    ({ error } = await supabase.from('products').insert({ ...payload, seller_id: myProfile.id }));
+    ({ error } = await supabase.from('products').insert({ ...payload, seller_id: myProfile.id, status: 'active' }));
   }
 
   setLoading('btnSaveProd', false);
@@ -743,84 +744,133 @@ async function loadAllOrders() {
   const tbody = document.getElementById('allOrdersTbl');
   if (!data?.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3);">주문 없음</td></tr>'; return; }
   
-  tbody.innerHTML = data.map(o => {
-    const buyerName = o.buyer?.name || '—';
-    const buyerPhone = o.buyer?.phone ? '+' + o.buyer.phone : '';
-    const delivery = o.delivery_address || '주소 정보 없음';
+  // Group orders by cart_id (or individual order ID if cart_id is null)
+  const grouped = [];
+  const groupsMap = {};
+
+  data.forEach(o => {
+    const key = o.cart_id || o.id;
+    if (!groupsMap[key]) {
+      groupsMap[key] = {
+        id: key,
+        buyer: o.buyer,
+        created_at: o.created_at,
+        status: o.status,
+        payment_method: o.payment_method,
+        delivery_address: o.delivery_address,
+        deposit_confirmed: o.deposit_confirmed,
+        items: []
+      };
+      grouped.push(groupsMap[key]);
+    }
+    groupsMap[key].items.push(o);
+  });
+  
+  tbody.innerHTML = grouped.map(group => {
+    const buyerName = group.buyer?.name || '—';
+    const buyerPhone = group.buyer?.phone ? '+' + group.buyer.phone : '';
+    const delivery = group.delivery_address || '주소 정보 없음';
     
-    const isCOD = o.payment_method === 'cod';
+    const isCOD = group.payment_method === 'cod';
     const paymentText = isCOD ? '<span class="badge bg-red">COD (현장결제)</span>' : '<span class="badge bg-green">온라인 송금</span>';
     
-    const depositRequired = isCOD ? Math.round(Number(o.total_price) * 0.03) : Number(o.total_price);
-    const depositConfirmedBadge = o.deposit_confirmed 
+    // Sum total_price of all items in group
+    const totalSum = group.items.reduce((s, item) => s + Number(item.total_price), 0);
+    
+    const depositRequired = isCOD ? Math.round(totalSum * 0.03) : totalSum;
+    const depositConfirmedBadge = group.deposit_confirmed 
       ? '<div style="margin-top:4px;"><span class="badge bg-green" style="font-size:10px; padding:2px 6px;">✅ 입금확인됨</span></div>' 
       : `<div style="margin-top:4px;"><span class="badge bg-yellow" style="font-size:10px; padding:2px 6px; font-weight:700;">⏳ 대기: ${formatPrice(depositRequired)} (${isCOD ? '3%' : '100%'})</span></div>`;
     
+    const targetId = group.items[0].cart_id || group.items[0].id;
+    const isGroup = Boolean(group.items[0].cart_id);
+    
     let adminActions = '—';
-    if (o.status === 'pending') {
-      if (!o.deposit_confirmed) {
+    if (group.status === 'pending') {
+      if (!group.deposit_confirmed) {
         adminActions = `
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <button class="btn-sm btn-green" style="padding:4px 8px; font-size:11px; background:var(--purple-l); border-color:var(--purple-l);" onclick="confirmOrderDeposit('${o.id}')">💰 입금 확인</button>
-            <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'cancelled')">주문취소</button>
+            <button class="btn-sm btn-green" style="padding:4px 8px; font-size:11px; background:var(--purple-l); border-color:var(--purple-l);" onclick="confirmOrderDeposit('${targetId}', ${isGroup})">💰 입금 확인</button>
+            <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${targetId}', 'cancelled', ${isGroup})">주문취소</button>
           </div>
         `;
       } else {
         adminActions = `
           <div style="display:flex; flex-direction:column; gap:4px;">
-            <button class="btn-sm btn-green" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'confirmed')">배송 시작</button>
-            <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'cancelled')">주문취소</button>
+            <button class="btn-sm btn-green" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${targetId}', 'confirmed', ${isGroup})">배송 시작</button>
+            <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${targetId}', 'cancelled', ${isGroup})">주문취소</button>
           </div>
         `;
       }
-    } else if (o.status === 'confirmed') {
+    } else if (group.status === 'confirmed') {
       adminActions = `
         <div style="display:flex; flex-direction:column; gap:4px;">
-          <button class="btn-sm btn-blue" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'completed')">구매 확정</button>
-          <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'cancelled')">반송/취소</button>
+          <button class="btn-sm btn-blue" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${targetId}', 'completed', ${isGroup})">구매 확정</button>
+          <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${targetId}', 'cancelled', ${isGroup})">반송/취소</button>
         </div>
       `;
     }
 
+    const displayId = isGroup ? `🧺 ${targetId.slice(0,8)}…` : `${targetId.slice(0,8)}…`;
+
+    const productsHtml = group.items.map(item => `
+      <div style="margin-bottom:4px; line-height:1.3;">
+        <span style="font-weight:600;font-size:12px;">${item.products?.title || '—'}</span>
+        <span style="font-size:11px;color:var(--t3);">(${item.quantity} 개)</span>
+      </div>
+    `).join('');
+
     return `
       <tr>
-        <td style="font-size:11px;color:var(--t3);">${o.id.slice(0,8)}…</td>
+        <td style="font-size:11px;color:var(--t3);">${displayId}</td>
         <td>
           <div style="font-weight:600;">${buyerName}</div>
           <div style="font-size:11px;color:var(--t2);">${buyerPhone}</div>
           <div style="font-size:10px;color:var(--t3);margin-top:2px;max-width:150px;white-space:normal;line-height:1.2;">🏠 ${delivery}</div>
+          ${group.items[0].notes ? `<div style="font-size:10px;color:var(--purple-l);margin-top:5px;max-width:150px;white-space:normal;line-height:1.2;background:rgba(255,101,132,0.06);padding:4px 6px;border-radius:6px;border:1px dashed var(--border2);font-weight:500;">📝 ${group.items[0].notes}</div>` : ''}
         </td>
         <td>
-          <div style="font-weight:500;font-size:12px;">${o.products?.title || '—'}</div>
-          <div style="font-size:11px;color:var(--t3);">${o.quantity} 개</div>
+          ${productsHtml}
         </td>
-        <td style="color:var(--gold);font-weight:700;">${formatPrice(o.total_price)}</td>
+        <td style="color:var(--gold);font-weight:700;">${formatPrice(totalSum)}</td>
         <td>
           <div>${paymentText}</div>
           ${depositConfirmedBadge}
         </td>
-        <td style="font-size:12px;color:var(--t3);">${formatDate(o.created_at)}</td>
-        <td><span class="badge ${statusBadge(o.status)}">${statusText(o.status)}</span></td>
+        <td style="font-size:12px;color:var(--t3);">${formatDate(group.created_at)}</td>
+        <td><span class="badge ${statusBadge(group.status)}">${statusText(group.status)}</span></td>
         <td>${adminActions}</td>
         <td>
-          <button class="btn-sm btn-red" style="background:rgba(239,68,68,.1); color:var(--red); border:1px solid rgba(239,68,68,.2);" onclick="adminDeleteOrder('${o.id}')">🗑️ 삭제</button>
+          <button class="btn-sm btn-red" style="background:rgba(239,68,68,.1); color:var(--red); border:1px solid rgba(239,68,68,.2);" onclick="adminDeleteOrder('${targetId}', ${isGroup})">🗑️ 삭제</button>
         </td>
       </tr>
     `;
   }).join('');
 }
 
-async function adminDeleteOrder(orderId) {
+async function adminDeleteOrder(orderId, isCartGroup = false) {
   if (!confirm('이 주문 기록을 완전히 삭제하시겠습니까?')) return;
-  const { error } = await supabase.from('orders').delete().eq('id', orderId);
+  const query = supabase.from('orders').delete();
+  if (isCartGroup) {
+    query.eq('cart_id', orderId);
+  } else {
+    query.eq('id', orderId);
+  }
+  const { error } = await query;
   if (error) { showToast('❌ 주문 삭제 실패: ' + error.message, 'error'); return; }
   showToast('🗑️ 주문 기록이 삭제되었습니다.');
   await refreshAll();
 }
 
-async function confirmOrderDeposit(orderId) {
-  if (!confirm('해당 주문의 입금(온라인 100% 또는 COD 3%) 완료를 확인하셨습니까?')) return;
-  const { error } = await supabase.from('orders').update({ deposit_confirmed: true }).eq('id', orderId);
+async function confirmOrderDeposit(orderId, isCartGroup = false) {
+  if (!confirm('해당 주문의 입금(온라인 100%) 완료를 확인하셨습니까?')) return;
+  const query = supabase.from('orders').update({ deposit_confirmed: true });
+  if (isCartGroup) {
+    query.eq('cart_id', orderId);
+  } else {
+    query.eq('id', orderId);
+  }
+  const { error } = await query;
   if (error) { showToast('❌ 입금 확인 처리 실패: ' + error.message, 'error'); return; }
   showToast('💰 입금 확인 완료! 배송 준비 단계로 넘어갑니다.', 'success');
   await refreshAll();
@@ -828,10 +878,10 @@ async function confirmOrderDeposit(orderId) {
 
 async function confirmOrderDepositFromModal(orderId) {
   closeBuyerOrdersModal();
-  await confirmOrderDeposit(orderId);
+  await confirmOrderDeposit(orderId, false);
 }
 
-async function adminUpdateOrderStatus(orderId, nextStatus) {
+async function adminUpdateOrderStatus(orderId, nextStatus, isCartGroup = false) {
   let trackingCompany = null;
   let trackingNumber = null;
   
@@ -858,7 +908,13 @@ async function adminUpdateOrderStatus(orderId, nextStatus) {
     updatePayload.tracking_number = trackingNumber;
   }
   
-  const { error } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+  const query = supabase.from('orders').update(updatePayload);
+  if (isCartGroup) {
+    query.eq('cart_id', orderId);
+  } else {
+    query.eq('id', orderId);
+  }
+  const { error } = await query;
   if (error) { showToast('❌ 상태 업데이트 실패: ' + error.message, 'error'); return; }
   showToast('🚀 주문 상태가 성공적으로 변경되었습니다.', 'success');
   await refreshAll();
@@ -886,10 +942,50 @@ async function saveProfile() {
     }
   }
 
+  let province = 'Bangkok';
+  let district = '';
+
+  if (address) {
+    // Try to parse as Korean address first
+    let parsedKr = null;
+    if (typeof parseKoreanAddress === 'function') {
+      parsedKr = parseKoreanAddress(address);
+    }
+    
+    if (parsedKr) {
+      province = parsedKr.province;
+      district = parsedKr.district || '';
+    } else if (typeof THAILAND_PROVINCES !== 'undefined') {
+      // If not Korean, try parsing as Thailand address
+      let matchedProvName = "";
+      let provinceData = null;
+      for (const tp of THAILAND_PROVINCES) {
+        if (address.includes(tp.name_en) || address.includes(tp.name_th)) {
+          matchedProvName = tp.name_en;
+          provinceData = tp;
+          break;
+        }
+      }
+      if (provinceData) {
+        province = matchedProvName;
+        let matchedDistName = "";
+        for (const td of provinceData.districts) {
+          if (address.includes(td.name_en) || address.includes(td.name_th)) {
+            matchedDistName = td.name_en;
+            break;
+          }
+        }
+        district = matchedDistName;
+      }
+    }
+  }
+
   const { error } = await supabase.from('profiles').update({
     name,
     store_name: store,
     location_address: address,
+    location_province: province,
+    location_district: district,
     description: desc,
     profile_image: logoUrl
   }).eq('id', myProfile.id);

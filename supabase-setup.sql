@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   total_price DECIMAL(12,2) NOT NULL,
   status      TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
   notes       TEXT,
+  cart_id     UUID,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );

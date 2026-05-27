@@ -49,14 +49,10 @@
         <div class="hero-btns" style="margin-bottom:20px;">
           <button onclick="switchTab('search')" class="btn btn-primary" data-i18n="btn_shop_now">🛍️ 지금 쇼핑하기</button>
         </div>
-        <div class="stats-bar">
+        <div class="stats-bar" style="grid-template-columns: repeat(2, 1fr);">
           <div>
             <div class="stat-num" id="sProducts">—</div>
             <div class="stat-lbl" data-i18n="stat_products">등록 상품</div>
-          </div>
-          <div>
-            <div class="stat-num" id="sSellers">—</div>
-            <div class="stat-lbl" data-i18n="stat_sellers">활성 판매자</div>
           </div>
           <div>
             <div class="stat-num" id="sOrders">—</div>
@@ -222,7 +218,7 @@
       <input type="number" class="form-input" id="oQty" value="1" min="1" oninput="calcTotal()">
     </div>
     
-    <div class="form-group">
+    <div class="form-group" style="display: none;">
       <label class="form-label" data-i18n="order_payment">결제 수단 선택</label>
       <div class="payment-methods">
         <div class="pay-opt active" onclick="setPaymentMethod('online')">
@@ -238,7 +234,35 @@
 
     <div class="form-group">
       <label class="form-label" data-i18n="order_address">배송 주소</label>
-      <textarea class="form-textarea" id="oAddress" data-i18n="order_address_placeholder" placeholder="배송 받으실 주소를 입력해주세요." required></textarea>
+      
+      <!-- 한국 거주자 주소 입력 폼 -->
+      <div id="krAddressForm" style="display: none; flex-direction: column; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <select id="oKrProvince" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">시/도 선택</option>
+          </select>
+          <select id="oKrDistrict" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">시/군/구 선택</option>
+          </select>
+        </div>
+        <input type="text" id="oKrDetailAddress" class="form-input" placeholder="나머지 상세 주소를 직접 입력하세요." required>
+      </div>
+
+      <!-- 태국 거주자 주소 입력 폼 -->
+      <div id="thAddressForm" style="display: none; flex-direction: column; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <select id="oThProvince" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">주/도 선택 (Province)</option>
+          </select>
+          <select id="oThDistrict" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">구/군 선택 (District)</option>
+          </select>
+        </div>
+        <input type="text" id="oThDetailAddress" class="form-input" placeholder="나머지 상세 주소를 입력하세요." required>
+      </div>
+      
+      <!-- 기존 로직 연동을 위한 Hidden 필드 -->
+      <input type="hidden" id="oAddress">
     </div>
 
     <div class="form-group">
@@ -266,6 +290,99 @@
     <button class="btn-submit" id="btnOrder" onclick="submitOrder()" data-i18n="btn_submit_order">✅ 주문 요청하기</button>
   </div>
 </div>
+
+<!-- FLOATING CART BUTTON -->
+<button id="cartFloatingBtn" class="cart-floating-btn" onclick="openCartModal()" style="display: none;">
+  🛒
+  <span id="cartBadgeCount" class="cart-badge" style="display: none;">0</span>
+</button>
+
+<!-- CART MODAL -->
+<div class="modal-bg" id="cartModal">
+  <div class="modal" style="max-width: 460px; padding: 24px;">
+    <div class="modal-hd">
+      <span class="modal-title" data-i18n="btn_add_to_cart">🧺 장바구니</span>
+      <button class="modal-x" onclick="closeCartModal()">✕</button>
+    </div>
+    
+    <!-- Cart Items Container -->
+    <div id="cartItemsList" style="max-height: 240px; overflow-y: auto; margin-bottom: 16px; padding-right: 4px;">
+      <!-- Cart items will be loaded dynamically here -->
+    </div>
+    
+    <!-- Shipping Address Form -->
+    <div class="form-group">
+      <label class="form-label" data-i18n="order_address">배송 주소</label>
+      
+      <!-- Korea Address Form -->
+      <div id="cKrAddressForm" style="display: none; flex-direction: column; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <select id="cKrProvince" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">시/도 선택</option>
+          </select>
+          <select id="cKrDistrict" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">시/군/구 선택</option>
+          </select>
+        </div>
+        <input type="text" id="cKrDetailAddress" class="form-input" placeholder="나머지 상세 주소를 직접 입력하세요." required>
+      </div>
+
+      <!-- Thailand Address Form -->
+      <div id="cThAddressForm" style="display: none; flex-direction: column; gap: 8px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <select id="cThProvince" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">주/도 선택 (Province)</option>
+          </select>
+          <select id="cThDistrict" class="form-select" style="padding: 11px 15px; border-radius: var(--r-sm);">
+            <option value="">구/군 선택 (District)</option>
+          </select>
+        </div>
+        <input type="text" id="cThDetailAddress" class="form-input" placeholder="나머지 상세 주소를 입력하세요." required>
+      </div>
+    </div>
+
+    <!-- Request Notes -->
+    <div class="form-group">
+      <label class="form-label" data-i18n="order_notes">요청사항 (선택)</label>
+      <textarea class="form-textarea" id="cNotes" placeholder="요청사항을 입력해주세요. (예: 색상, 용량 등)"></textarea>
+    </div>
+
+    <!-- Escrow Bank Account Copy Panel -->
+    <div id="cPaymentInfoBox" style="background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.15); border-radius:var(--r-sm); padding:12px; font-size:12px; line-height:1.5; color:var(--t2); margin-bottom:18px;">
+      💡 <b>[온라인 송금 안내]</b><br>
+      본사 계좌로 100% 입금이 확인되면 판매자가 배송을 시작합니다.<br><br>
+      <b>🏦 입금 계좌:</b><br>
+      국민은행 437601-01-382570<br>(예금주: 주식회사 반띵마켓)
+      <button onclick="copyBankAccount()" class="btn-sm btn-purple" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; background: var(--gp); color: #fff; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; margin-top: 6px; font-weight: bold;">
+        📋 계좌번호 복사
+      </button>
+    </div>
+
+    <!-- Cart Shipping Fee Info Box -->
+    <div id="cShippingInfoBox" style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.15); border-radius:var(--r-sm); padding:12px; font-size:12px; line-height:1.5; color:var(--t2); margin-bottom:18px;">
+    </div>
+    
+    <!-- Price Summary Panel -->
+    <div style="background:var(--card);border-radius:var(--r-sm);padding:14px;margin-bottom:18px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--t2);">
+        <span>상품 소계</span>
+        <span id="cSubtotal">₩0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--t2);">
+        <span>배송비</span>
+        <span id="cShippingFee">₩0</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:800;">
+        <span style="color:var(--t1);font-size:14px;">최종 결제 금액</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:900;color:var(--gold);" id="cTotal">₩0</span>
+      </div>
+    </div>
+    
+    <button class="btn-submit" id="btnCartOrder" onclick="submitCartOrder()">✅ 주문 요청하기</button>
+  </div>
+</div>
+
 
 <!-- PRODUCT DETAIL MODAL -->
 <div class="modal-bg" id="detailModal">
@@ -309,8 +426,8 @@
         <p id="detailDesc" style="font-size:12px; color:var(--t2); line-height:1.6; white-space:pre-wrap;"><span data-i18n="detail_no_desc">설명이 없습니다.</span></p>
       </div>
       
-      <div style="border-top:1px solid var(--border); padding-top:12px; margin-bottom:4px;">
-        <h4 style="font-size:11px; color:var(--t3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;" data-i18n="detail_shop_info_title">판매 매장 정보 / Shop Info</h4>
+      <div style="border-top:1px solid var(--border); padding-top:12px; margin-bottom:12px;">
+        <h4 style="font-size:11px; color:var(--t3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;" data-i18n="detail_shop_info_title">반띵마켓 본사 정보 / Office Info</h4>
         <div style="background:rgba(0,0,0,0.02); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:4px; font-size:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="s-avatar" id="detailStoreAvatar" style="width:22px; height:22px; font-size:11px; margin:0;">🏪</div>
@@ -324,9 +441,10 @@
     </div>
     
     <!-- Buy Button at bottom -->
-    <div style="padding:14px 20px; border-top:1px solid var(--border); background:var(--bg3); display:flex; gap:10px;">
-      <button class="btn-submit" id="btnDetailChat" onclick="openChatFromDetail()" style="margin:0; flex:1; background:var(--gg);" data-i18n="btn_chat">💬 문의하기</button>
-      <button class="btn-submit" id="btnDetailBuy" onclick="triggerDetailBuy()" style="margin:0; flex:1.2;" data-i18n="btn_submit_order">🛒 구매 요청하기</button>
+    <div style="padding:14px 20px; border-top:1px solid var(--border); background:var(--bg3); display:flex; gap:8px;">
+      <button class="btn-submit" id="btnDetailChat" onclick="openChatFromDetail()" style="margin:0; flex:1; background:var(--gg); padding:10px 4px; font-size:12px;" data-i18n="btn_chat">💬 문의하기</button>
+      <button class="btn-submit" id="btnDetailCart" onclick="addToCart(currentProd.id)" style="margin:0; flex:1.2; background:var(--gp); padding:10px 4px; font-size:12px;" data-i18n="btn_add_to_cart">🧺 장바구니</button>
+      <button class="btn-submit" id="btnDetailBuy" onclick="triggerDetailBuy()" style="margin:0; flex:1.2; padding:10px 4px; font-size:12px;" data-i18n="btn_buy_now">🛍️ 바로구매</button>
     </div>
   </div>
 </div>
@@ -369,6 +487,8 @@
 <!-- TOAST -->
 <div class="toast" id="globalToast"></div>
 
+<script src="js/thailand-addresses.js"></script>
+<script src="js/korean-addresses.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/config.js"></script>
 <script>
@@ -377,6 +497,81 @@ let shops = [];
 let currentProd = null;
 let selectedPaymentMethod = 'online';
 let activeShopFilter = 'all';
+let currentUserId = null;
+
+// Cart state: Array<{ productId: string, quantity: number }>
+let cart = [];
+
+function loadCart() {
+  try {
+    const saved = localStorage.getItem("bandding_cart");
+    cart = saved ? JSON.parse(saved) : [];
+  } catch (e) {
+    cart = [];
+  }
+  updateCartBadge();
+}
+
+function saveCart() {
+  localStorage.setItem("bandding_cart", JSON.stringify(cart));
+  updateCartBadge();
+}
+
+function addToCart(productId, qty = 1) {
+  if (!currentUserId) {
+    showToast("🔑 로그인이 필요합니다.", "error");
+    switchTab('mypage');
+    return;
+  }
+  const item = cart.find(i => i.productId === productId);
+  if (item) {
+    item.quantity += qty;
+  } else {
+    cart.push({ productId, quantity: qty });
+  }
+  saveCart();
+  showToast("🧺 장바구니에 상품이 담겼습니다.", "success");
+}
+
+function removeFromCart(productId) {
+  cart = cart.filter(i => i.productId !== productId);
+  saveCart();
+  renderCartList();
+}
+
+function updateCartQty(productId, qty) {
+  const item = cart.find(i => i.productId === productId);
+  if (item) {
+    item.quantity = Math.max(1, qty);
+    saveCart();
+    renderCartList();
+  }
+}
+
+function getCartCount() {
+  return cart.reduce((sum, item) => sum + item.quantity, 0);
+}
+
+function clearCart() {
+  cart = [];
+  saveCart();
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById("cartBadgeCount");
+  const btn = document.getElementById("cartFloatingBtn");
+  if (!badge || !btn) return;
+  
+  const count = getCartCount();
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = "flex";
+    btn.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+    btn.style.display = "none";
+  }
+}
 
 // Residence Country setup
 let currentResidence = localStorage.getItem("iris_residence") || "ko";
@@ -392,18 +587,56 @@ function changeResidence(res) {
     updateDetailShippingNotice();
   }
   
+  updateOrderAddressFormVisibility();
+  
   // Re-render products to show price changes if needed
   renderProds(products, 'prodsGrid');
   triggerSearch();
 }
 
+function updateOrderAddressFormVisibility() {
+  const krForm = document.getElementById("krAddressForm");
+  const thForm = document.getElementById("thAddressForm");
+  if (krForm && thForm) {
+    if (currentResidence === "th") {
+      krForm.style.display = "none";
+      thForm.style.display = "flex";
+    } else {
+      krForm.style.display = "flex";
+      thForm.style.display = "none";
+    }
+  }
+
+  const cKrForm = document.getElementById("cKrAddressForm");
+  const cThForm = document.getElementById("cThAddressForm");
+  if (cKrForm && cThForm) {
+    if (currentResidence === "th") {
+      cKrForm.style.display = "none";
+      cThForm.style.display = "flex";
+    } else {
+      cKrForm.style.display = "flex";
+      cThForm.style.display = "none";
+    }
+  }
+}
+
 function updateShippingNotice() {
   const box = document.getElementById("shippingInfoBox");
-  if (!box) return;
-  if (currentResidence === "th") {
-    box.innerHTML = t("shipping_desc_thailand") || `✈️ <b>[태국 직배송]</b> 태국 내 거주자용 항공 배송으로, 배송 기간은 약 7일 소요됩니다.`;
-  } else {
-    box.innerHTML = t("shipping_desc_korea") || `🚚 <b>[국내 배송]</b> 한국 내 거주자용 국내 배송으로, 배송 기간은 약 1~2일 소요됩니다.`;
+  if (box) {
+    if (currentResidence === "th") {
+      box.innerHTML = `✈️ <b>[태국 직배송]</b> 태국 내 거주자용 항공 배송으로, 배송 기간은 약 7일 소요됩니다.<br>💡 태국 직배송 배송비는 <b>1kg당 200바트</b>가 별도로 청구됩니다.`;
+    } else {
+      box.innerHTML = `🚚 <b>[국내 배송]</b> 한국 내 거주자용 국내 배송으로, 배송 기간은 약 1~2일 소요됩니다.<br>💡 5만원 미만 주문 시 배송비 <b>3,000원</b>이 추가됩니다. (5만원 이상 무료배송)`;
+    }
+  }
+
+  const cBox = document.getElementById("cShippingInfoBox");
+  if (cBox) {
+    if (currentResidence === "th") {
+      cBox.innerHTML = `✈️ <b>[태국 직배송]</b> 태국 내 거주자용 항공 배송으로, 배송 기간은 약 7일 소요됩니다.<br>💡 태국 직배송 배송비는 <b>1kg당 200바트</b>가 별도로 청구됩니다.`;
+    } else {
+      cBox.innerHTML = `🚚 <b>[국내 배송]</b> 한국 내 거주자용 국내 배송으로, 배송 기간은 약 1~2일 소요됩니다.<br>💡 5만원 미만 주문 시 배송비 <b>3,000원</b>이 추가됩니다. (5만원 이상 무료배송)`;
+    }
   }
 }
 
@@ -436,11 +669,31 @@ async function init() {
   const rSelect = document.getElementById("residenceSelect");
   if (rSelect) rSelect.value = currentResidence;
   updateShippingNotice();
+  
+  // Initialize Thailand address dropdowns
+  try {
+    initThailandAddressSelects('oThProvince', 'oThDistrict');
+    initThailandAddressSelects('cThProvince', 'cThDistrict');
+  } catch (e) {
+    console.error("Thailand Address selects init failed:", e);
+  }
+  
+  // Initialize Korean address dropdowns
+  try {
+    initKoreanAddressSelects('oKrProvince', 'oKrDistrict');
+    initKoreanAddressSelects('cKrProvince', 'cKrDistrict');
+  } catch (e) {
+    console.error("Korean Address selects init failed:", e);
+  }
+  
+  updateOrderAddressFormVisibility();
+  loadCart();
 
   try {
     // 2. Auth state
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      currentUserId = user.id;
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
       if (p) {
         // Setup My Page
@@ -459,8 +712,17 @@ async function init() {
         } else {
           dash.href = p.role === 'admin' ? 'admin/dashboard.html' : 'seller/dashboard.html';
         }
-        await loadMyInquiries(); // 내 문의 내역 로드
-        await loadMyOrders(); // 내 주문 내역 로드
+        
+        try {
+          await loadMyInquiries(); // 내 문의 내역 로드
+        } catch (e) {
+          console.error("loadMyInquiries failed:", e);
+        }
+        try {
+          await loadMyOrders(); // 내 주문 내역 로드
+        } catch (e) {
+          console.error("loadMyOrders failed:", e);
+        }
       } else {
         // 프로필이 없는 경우 (인증은 되었으나 프로필 생성이 실패한 비정상 세션)
         console.warn("User has active auth session but no profile exists. Redirecting to complete registration...");
@@ -468,18 +730,24 @@ async function init() {
         return;
       }
     }
+  } catch (err) {
+    console.error("Auth state checking failed:", err);
+  }
 
-    // 3. Stats
-    const [pCount, sCount, oCount] = await Promise.all([
+  // 3. Stats
+  try {
+    const [pCount, oCount] = await Promise.all([
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'seller').eq('is_approved', true),
       supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'completed')
     ]);
     animNum('sProducts', pCount.count || 0);
-    animNum('sSellers', sCount.count || 0);
     animNum('sOrders', oCount.count || 0);
+  } catch (err) {
+    console.error("Stats calculation failed:", err);
+  }
 
-    // 4. Load Shops
+  // 4. Load Shops
+  try {
     const { data: profilesList } = await supabase.from('profiles')
       .select('id, name, store_name, profile_image, description, partner_type, location_province, location_district, location_address, location_coords, commission_rate, payout_method')
       .eq('role', 'seller')
@@ -489,15 +757,18 @@ async function init() {
     renderShopLogoList(shops);
     renderShopsListView(shops);
     populateLocationFilter(shops);
-
-    // 5. Products
-    await loadProducts('all');
   } catch (err) {
-    console.warn("Supabase initialization skipped or failed (likely local file:// protocol limits):", err);
-    // Render empty states for local preview
+    console.error("Load shops failed:", err);
     renderShopLogoList([]);
     renderShopsListView([]);
     populateLocationFilter([]);
+  }
+
+  // 5. Products
+  try {
+    await loadProducts('all');
+  } catch (err) {
+    console.warn("Supabase initialization skipped or failed (likely local file:// protocol limits):", err);
     renderProds([], 'prodsGrid');
   }
 }
@@ -505,6 +776,7 @@ async function init() {
 // Render horizontal shop logos
 function renderShopLogoList(list) {
   const container = document.getElementById('partnerLogoList');
+  if (!container) return;
   if (!list.length) {
     container.innerHTML = '<div class="empty" style="padding:10px;">' + t('no_shops') + '</div>';
     return;
@@ -542,6 +814,7 @@ async function filterByShop(sellerId) {
 // Render partner shops view
 function renderShopsListView(list) {
   const container = document.getElementById('shopsListViewGrid');
+  if (!container) return;
   if (!list.length) {
     container.innerHTML = '<div class="empty"><div class="empty-ico">🏪</div><div class="empty-ttl">' + t('no_shops') + '</div></div>';
     return;
@@ -580,6 +853,7 @@ function renderShopsListView(list) {
 // Populate location filter dropdown in search tab
 function populateLocationFilter(list) {
   const select = document.getElementById('searchProvince');
+  if (!select) return;
   const provinces = [...new Set(list.map(s => s.location_province).filter(Boolean))];
   
   let options = `<option value="all">${t('search_all_locations')}</option>`;
@@ -632,7 +906,14 @@ function renderProds(list, elementId) {
             <span style="color:var(--t2);">${t('search_stock')}: ${p.stock || 1}</span>
           </div>
           <div class="p-price" style="font-size:15px; margin-bottom:10px;">${formatPrice(p.price)}</div>
-          <button class="btn-buy" onclick="event.stopPropagation(); openOrder('${p.id}')">${t('btn_buy')}</button>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-buy" onclick="event.stopPropagation(); addToCart('${p.id}')" style="background: var(--purple-l); flex: 1; padding: 8px 4px; font-size: 11px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+              ${t('btn_add_to_cart')}
+            </button>
+            <button class="btn-buy" onclick="event.stopPropagation(); openOrder('${p.id}')" style="flex: 1; padding: 8px 4px; font-size: 11px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+              ${t('btn_buy')}
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -720,27 +1001,35 @@ function setPaymentMethod(method) {
   updatePaymentNotice();
 }
 
+function copyBankAccount() {
+  const accountNum = "437601-01-382570";
+  navigator.clipboard.writeText(accountNum).then(() => {
+    showToast("📋 계좌번호가 복사되었습니다!", "success");
+  }).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = accountNum;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast("📋 계좌번호가 복사되었습니다!", "success");
+  });
+}
+
 function updatePaymentNotice() {
   if (!currentProd) return;
-  const qty = parseInt(document.getElementById('oQty').value) || 1;
-  const totalPrice = Number(currentProd.price) * qty;
   const infoBox = document.getElementById('paymentInfoBox');
   if (!infoBox) return;
 
-  if (selectedPaymentMethod === 'online') {
-    infoBox.innerHTML = t('order_online_desc') || `💡 <b>[온라인 송금]</b> 본사 계좌로 100% 금액 입금이 확인되면 판매자가 배송을 시작합니다. (구매자 추가 수수료 없음)`;
-  } else {
-    const deposit = Math.round(totalPrice * 0.03);
-    const rest = totalPrice;
-    
-    let desc = t('order_cod_desc');
-    if (desc) {
-      desc = desc.replace('{deposit}', deposit.toLocaleString()).replace('{rest}', rest.toLocaleString());
-    } else {
-      desc = `⚠️ <b>[COD 예약금 선입금 필요]</b> 노쇼 및 단순 변심 방지를 위해 기기값의 3% (<b>฿${deposit.toLocaleString()}</b>)를 본사 계좌로 선입금하셔야 배송이 시작됩니다. 나머지 97% (<b>฿${rest.toLocaleString()}</b>)는 수령 시 택배 기사에게 현금으로 결제합니다.`;
-    }
-    infoBox.innerHTML = desc;
-  }
+  infoBox.innerHTML = `
+    💡 <b>[온라인 송금 안내]</b><br>
+    본사 계좌로 100% 입금이 확인되면 판매자가 배송을 시작합니다.<br><br>
+    <b>🏦 입금 계좌:</b><br>
+    국민은행 437601-01-382570<br>(예금주: 주식회사 반띵마켓)
+    <button onclick="copyBankAccount()" class="btn-sm btn-purple" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: none; background: var(--gp); color: #fff; border-radius: 4px; padding: 4px 8px; font-size: 10px; cursor: pointer; margin-top: 6px; font-weight: bold;">
+      📋 계좌번호 복사
+    </button>
+  `;
 }
 
 // Open Order Modal
@@ -760,11 +1049,9 @@ async function openOrder(id) {
   
   // Auto-fill buyer's address from their profile if exists
   const { data: buyerProfile } = await supabase.from('profiles').select('location_address').eq('id', user.id).single();
-  if (buyerProfile && buyerProfile.location_address) {
-    document.getElementById('oAddress').value = buyerProfile.location_address;
-  } else {
-    document.getElementById('oAddress').value = '';
-  }
+  const savedAddr = buyerProfile && buyerProfile.location_address ? buyerProfile.location_address.trim() : '';
+  document.getElementById('oAddress').value = savedAddr;
+  populateAddressFields('o', savedAddr);
   
   const storeName = currentProd.profiles?.store_name || currentProd.profiles?.name || t('role_seller');
   const conditionText = t('condition_' + (currentProd.condition ? currentProd.condition.toLowerCase().replace(' ', '') : 's'));
@@ -784,7 +1071,21 @@ async function openOrder(id) {
 function calcTotal() {
   if (!currentProd) return;
   const qty = parseInt(document.getElementById('oQty').value) || 1;
-  document.getElementById('oTotal').innerHTML = formatPrice(Number(currentProd.price) * qty);
+  const basePrice = Number(currentProd.price) * qty;
+  
+  let finalPrice = basePrice;
+  let shippingFeeHtml = "";
+  
+  if (currentResidence === "ko") {
+    if (basePrice < 50000) {
+      finalPrice = basePrice + 3000;
+      shippingFeeHtml = ` <span style="font-size:12px; color:var(--red); font-weight:normal;">(배송비 ₩3,000 추가)</span>`;
+    } else {
+      shippingFeeHtml = ` <span style="font-size:12px; color:var(--green); font-weight:normal;">(무료 배송)</span>`;
+    }
+  }
+  
+  document.getElementById('oTotal').innerHTML = formatPrice(finalPrice) + shippingFeeHtml;
   
   updatePaymentNotice();
 }
@@ -794,11 +1095,46 @@ async function submitOrder() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || !currentProd) return;
   
-  const addr = document.getElementById('oAddress').value.trim();
-  if (!addr) {
-    showToast(t('toast_address_required'), 'error');
-    return;
+  let addr = "";
+  if (currentResidence === "ko") {
+    const prov = document.getElementById('oKrProvince').value;
+    const dist = document.getElementById('oKrDistrict').value;
+    const detail = document.getElementById('oKrDetailAddress').value.trim();
+    
+    if (!prov) {
+      showToast(t('toast_province_required') || "❌ 지역(주)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!dist) {
+      showToast(t('toast_district_required') || "❌ 구/군(District)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!detail) {
+      showToast(t('toast_address_required') || "❌ 상세 주소를 입력해주세요.", 'error');
+      return;
+    }
+    addr = `${prov} ${dist} ${detail}`;
+  } else {
+    const prov = document.getElementById('oThProvince').value;
+    const dist = document.getElementById('oThDistrict').value;
+    const detail = document.getElementById('oThDetailAddress').value.trim();
+    
+    if (!prov) {
+      showToast(t('toast_province_required') || "❌ 지역(주)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!dist) {
+      showToast(t('toast_district_required') || "❌ 구/군(District)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!detail) {
+      showToast(t('toast_address_required') || "❌ 상세 주소를 입력해주세요.", 'error');
+      return;
+    }
+    addr = `${prov}, ${dist}, ${detail}`;
   }
+  
+  document.getElementById('oAddress').value = addr;
   
   setLoading('btnOrder', true, t('loading'));
   const qty = parseInt(document.getElementById('oQty').value) || 1;
@@ -824,7 +1160,10 @@ async function submitOrder() {
       return;
     }
 
-    const totalPrice = Number(currentProd.price) * qty;
+    let totalPrice = Number(currentProd.price) * qty;
+    if (currentResidence === "ko" && totalPrice < 50000) {
+      totalPrice += 3000;
+    }
     
     // New commission rule: 3%, capped at 400 Baht
     const commAmount = Math.min(totalPrice * 0.03, 400);
@@ -861,6 +1200,419 @@ async function submitOrder() {
   } catch (err) {
     showToast(t('error_occurred') + err.message, 'error');
     setLoading('btnOrder', false);
+  }
+}
+
+function populateAddressFields(prefix, savedAddr) {
+  const krProv = document.getElementById(prefix + 'KrProvince');
+  const krDist = document.getElementById(prefix + 'KrDistrict');
+  const krDetail = document.getElementById(prefix + 'KrDetailAddress');
+  
+  const thProv = document.getElementById(prefix + 'ThProvince');
+  const thDist = document.getElementById(prefix + 'ThDistrict');
+  const thDetail = document.getElementById(prefix + 'ThDetailAddress');
+  
+  if (krProv) krProv.value = '';
+  if (krDist) {
+    krDist.innerHTML = '<option value="">시/군/구 선택</option>';
+    krDist.disabled = true;
+  }
+  if (krDetail) krDetail.value = '';
+  
+  if (thProv) thProv.value = '';
+  if (thDist) {
+    thDist.innerHTML = '<option value="">구/군 선택 (District)</option>';
+    thDist.disabled = true;
+  }
+  if (thDetail) thDetail.value = '';
+  
+  if (!savedAddr) return;
+  
+  const trimmedAddr = savedAddr.trim();
+  if (currentResidence === "ko") {
+    const parsedKr = typeof parseKoreanAddress === 'function' ? parseKoreanAddress(trimmedAddr) : null;
+    if (parsedKr) {
+      if (krProv) krProv.value = parsedKr.province;
+      if (krDist) {
+        krDist.innerHTML = '<option value="">시/군/구 선택</option>';
+        krDist.disabled = false;
+        
+        const provinceData = KOREAN_PROVINCES.find(p => p.name === parsedKr.province);
+        if (provinceData) {
+          provinceData.districts.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            krDist.appendChild(opt);
+          });
+        }
+        if (parsedKr.district) {
+          krDist.value = parsedKr.district;
+        }
+      }
+      if (krDetail) krDetail.value = parsedKr.remaining || '';
+    } else {
+      if (krDetail) krDetail.value = trimmedAddr;
+    }
+  } else if (currentResidence === "th") {
+    let matchedProvName = "";
+    let provinceData = null;
+    
+    for (const p of THAILAND_PROVINCES) {
+      if (trimmedAddr.includes(p.name_en) || trimmedAddr.includes(p.name_th)) {
+        matchedProvName = p.name_en;
+        provinceData = p;
+        break;
+      }
+    }
+    
+    if (provinceData) {
+      if (thProv) thProv.value = matchedProvName;
+      if (thDist) {
+        thDist.innerHTML = '<option value="">선택해주세요 / เลือกอำเภอ</option>';
+        thDist.disabled = false;
+        
+        provinceData.districts.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.name_en;
+          opt.textContent = `${d.name_en} (${d.name_th})`;
+          thDist.appendChild(opt);
+        });
+        
+        let matchedDistName = "";
+        for (const d of provinceData.districts) {
+          if (trimmedAddr.includes(d.name_en) || trimmedAddr.includes(d.name_th)) {
+            matchedDistName = d.name_en;
+            break;
+          }
+        }
+        if (matchedDistName) {
+          thDist.value = matchedDistName;
+        }
+      }
+      
+      let detail = trimmedAddr;
+      detail = detail.replace(provinceData.name_en, '').replace(provinceData.name_th, '');
+      const districtObj = provinceData.districts.find(d => d.name_en === matchedDistName);
+      if (districtObj) {
+        detail = detail.replace(districtObj.name_en, '').replace(districtObj.name_th, '');
+      }
+      
+      detail = detail.replace(/^[\s,.\-_]+|[\s,.\-_]+$/g, '').replace(/\s*,\s*/g, ', ').trim();
+      if (thDetail) thDetail.value = detail;
+    } else {
+      if (thDetail) thDetail.value = trimmedAddr;
+    }
+  }
+}
+
+async function openCartModal() {
+  const modal = document.getElementById("cartModal");
+  if (!modal) return;
+  modal.classList.add("open");
+  
+  // Clear address fields first
+  populateAddressFields('c', '');
+  
+  if (currentUserId) {
+    try {
+      const { data: buyerProfile } = await supabase.from('profiles').select('location_address').eq('id', currentUserId).single();
+      if (buyerProfile && buyerProfile.location_address) {
+        populateAddressFields('c', buyerProfile.location_address);
+      }
+    } catch (e) {
+      console.error("Autofill cart address failed:", e);
+    }
+  }
+  
+  renderCartList();
+}
+
+function closeCartModal() {
+  const modal = document.getElementById("cartModal");
+  if (modal) modal.classList.remove("open");
+}
+
+async function renderCartList() {
+  const listContainer = document.getElementById("cartItemsList");
+  if (!listContainer) return;
+  
+  if (cart.length === 0) {
+    listContainer.innerHTML = `<div class="empty" style="padding: 20px 0; font-size: 13px; color: var(--t3);">장바구니가 비어 있습니다.</div>`;
+    document.getElementById("cSubtotal").textContent = formatPrice(0);
+    document.getElementById("cShippingFee").textContent = formatPrice(0);
+    document.getElementById("cTotal").textContent = formatPrice(0);
+    updateCartBadge();
+    return;
+  }
+  
+  // Fetch latest products details from database
+  let dbProducts = [];
+  try {
+    const productIds = cart.map(item => item.productId);
+    const { data, error } = await supabase.from('products')
+      .select('id, title, price, images, stock, status, seller_id')
+      .in('id', productIds);
+      
+    if (!error && data) {
+      dbProducts = data;
+    }
+  } catch (e) {
+    console.error("Fetch cart products from DB failed, using fallback:", e);
+  }
+  
+  let subtotal = 0;
+  let html = "";
+  
+  cart.forEach(item => {
+    // Find product in DB results or local fallback
+    let prod = dbProducts.find(p => p.id === item.productId) || products.find(p => p.id === item.productId);
+    
+    if (!prod) {
+      html += `
+        <div class="cart-item">
+          <div class="cart-item-info">
+            <div class="cart-item-title" style="color:var(--red);">존재하지 않거나 삭제된 상품</div>
+          </div>
+          <button class="cart-remove-btn" onclick="removeFromCart('${item.productId}')">✕</button>
+        </div>
+      `;
+      return;
+    }
+    
+    const isSoldOut = prod.status !== 'active' || prod.stock <= 0;
+    if (!isSoldOut) {
+      subtotal += Number(prod.price) * item.quantity;
+    }
+    
+    // Quantity controls (clamp to stock)
+    const maxQty = prod.stock || 1;
+    if (item.quantity > maxQty) {
+      item.quantity = maxQty;
+    }
+    
+    // Image resolution
+    let imgUrl = "";
+    if (prod.images) {
+      try {
+        const imgs = typeof prod.images === 'string' ? JSON.parse(prod.images) : prod.images;
+        if (Array.isArray(imgs) && imgs.length > 0) {
+          imgUrl = imgs[0];
+        }
+      } catch (err) {
+        if (Array.isArray(prod.images) && prod.images.length > 0) {
+          imgUrl = prod.images[0];
+        }
+      }
+    }
+    
+    const imgHtml = imgUrl ? `<img class="cart-item-img" src="${imgUrl}" alt="${prod.title}">` : `<div class="cart-item-img" style="display:flex;align-items:center;justify-content:center;background:var(--bg3);font-size:20px;">📦</div>`;
+    
+    html += `
+      <div class="cart-item" style="${isSoldOut ? 'opacity: 0.6;' : ''}">
+        ${imgHtml}
+        <div class="cart-item-info">
+          <div class="cart-item-title">${prod.title}</div>
+          <div class="cart-item-price">${formatPrice(prod.price)}</div>
+          ${isSoldOut ? `<div style="font-size: 11px; color: var(--red); font-weight: bold; margin-top: 4px;">품절 (Sold Out)</div>` : ''}
+        </div>
+        ${!isSoldOut ? `
+          <div class="cart-item-actions">
+            <button class="qty-btn" onclick="updateCartQty('${prod.id}', ${item.quantity - 1})">-</button>
+            <input type="text" class="qty-val" value="${item.quantity}" readonly>
+            <button class="qty-btn" onclick="updateCartQty('${prod.id}', ${item.quantity + 1})">+</button>
+          </div>
+        ` : ''}
+        <button class="cart-remove-btn" onclick="removeFromCart('${prod.id}')">✕</button>
+      </div>
+    `;
+  });
+  
+  listContainer.innerHTML = html;
+  
+  // Calculate shipping fee and final total
+  let shippingFee = 0;
+  if (currentResidence === "ko") {
+    if (subtotal > 0 && subtotal < 50000) {
+      shippingFee = 3000;
+    }
+  }
+  
+  const finalTotal = subtotal + shippingFee;
+  
+  document.getElementById("cSubtotal").textContent = formatPrice(subtotal);
+  if (currentResidence === "ko") {
+    document.getElementById("cShippingFee").textContent = formatPrice(shippingFee);
+  } else {
+    document.getElementById("cShippingFee").textContent = `฿0 (별도 청구)`;
+  }
+  document.getElementById("cTotal").textContent = formatPrice(finalTotal);
+  
+  updateCartBadge();
+}
+
+async function submitCartOrder() {
+  if (!currentUserId) {
+    showToast("🔑 로그인이 필요합니다.", "error");
+    return;
+  }
+  
+  if (cart.length === 0) {
+    showToast("🧺 장바구니가 비어 있습니다.", "error");
+    return;
+  }
+  
+  // 1. Gather address
+  let addr = "";
+  if (currentResidence === "ko") {
+    const prov = document.getElementById('cKrProvince').value;
+    const dist = document.getElementById('cKrDistrict').value;
+    const detail = document.getElementById('cKrDetailAddress').value.trim();
+    
+    if (!prov) {
+      showToast(t('toast_province_required') || "❌ 지역(주)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!dist) {
+      showToast(t('toast_district_required') || "❌ 구/군(District)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!detail) {
+      showToast(t('toast_address_required') || "❌ 상세 주소를 입력해주세요.", 'error');
+      return;
+    }
+    addr = `${prov} ${dist} ${detail}`;
+  } else {
+    const prov = document.getElementById('cThProvince').value;
+    const dist = document.getElementById('cThDistrict').value;
+    const detail = document.getElementById('cThDetailAddress').value.trim();
+    
+    if (!prov) {
+      showToast(t('toast_province_required') || "❌ 지역(주)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!dist) {
+      showToast(t('toast_district_required') || "❌ 구/군(District)을 선택해주세요.", 'error');
+      return;
+    }
+    if (!detail) {
+      showToast(t('toast_address_required') || "❌ 상세 주소를 입력해주세요.", 'error');
+      return;
+    }
+    addr = `${prov}, ${dist}, ${detail}`;
+  }
+  
+  setLoading('btnCartOrder', true, t('loading'));
+  
+  try {
+    // 2. Fetch latest product info to check stock and status
+    const productIds = cart.map(item => item.productId);
+    const { data: dbProducts, error: fetchErr } = await supabase.from('products')
+      .select('id, title, price, stock, status, seller_id')
+      .in('id', productIds);
+      
+    if (fetchErr || !dbProducts) {
+      showToast(t('error_occurred') + (fetchErr ? fetchErr.message : ""), 'error');
+      setLoading('btnCartOrder', false);
+      return;
+    }
+    
+    // Validate stock and status
+    const ordersToInsert = [];
+    let subtotal = 0;
+    
+    for (let i = 0; i < cart.length; i++) {
+      const cartItem = cart[i];
+      const prod = dbProducts.find(p => p.id === cartItem.productId);
+      
+      if (!prod || prod.status !== 'active') {
+        showToast(`❌ [${prod ? prod.title : '알 수 없는 상품'}]은 판매 중이 아닙니다.`, 'error');
+        setLoading('btnCartOrder', false);
+        return;
+      }
+      
+      if (prod.stock < cartItem.quantity) {
+        showToast(`❌ [${prod.title}]의 재고가 부족합니다. (남은 재고: ${prod.stock}개)`, 'error');
+        setLoading('btnCartOrder', false);
+        return;
+      }
+      
+      subtotal += Number(prod.price) * cartItem.quantity;
+    }
+    
+    // Apply shipping fee rule: Korea subtotal < 50,000 KRW
+    let shippingFee = 0;
+    if (currentResidence === "ko" && subtotal < 50000) {
+      shippingFee = 3000;
+    }
+    
+    // Prepare batch orders array
+    const notesValue = document.getElementById('cNotes').value || null;
+    const cartId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') 
+      ? crypto.randomUUID() 
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+    
+    for (let i = 0; i < cart.length; i++) {
+      const cartItem = cart[i];
+      const prod = dbProducts.find(p => p.id === cartItem.productId);
+      
+      let itemTotalPrice = Number(prod.price) * cartItem.quantity;
+      // Add shipping fee to the first order row if applicable
+      if (i === 0) {
+        itemTotalPrice += shippingFee;
+      }
+      
+      const commAmount = Math.min(itemTotalPrice * 0.03, 400);
+      
+      ordersToInsert.push({
+        buyer_id: currentUserId,
+        seller_id: prod.seller_id,
+        product_id: prod.id,
+        quantity: cartItem.quantity,
+        total_price: itemTotalPrice,
+        notes: notesValue,
+        payment_method: 'online',
+        commission_amount: commAmount,
+        payout_status: 'pending',
+        delivery_address: addr,
+        deposit_confirmed: false,
+        cart_id: cartId
+      });
+    }
+    
+    // 3. Batch insert orders
+    const { error: insertErr } = await supabase.from('orders').insert(ordersToInsert);
+    
+    if (insertErr) {
+      showToast(t('error_occurred') + insertErr.message, 'error');
+      setLoading('btnCartOrder', false);
+      return;
+    }
+    
+    // Update buyer's profile address
+    await supabase.from('profiles').update({ location_address: addr }).eq('id', currentUserId);
+    
+    setLoading('btnCartOrder', false);
+    showToast(t('success_order'), 'success');
+    
+    clearCart();
+    closeCartModal();
+    
+    // Clear cart form notes and address detail
+    document.getElementById('cNotes').value = '';
+    document.getElementById('cKrDetailAddress').value = '';
+    document.getElementById('cThDetailAddress').value = '';
+    
+    // Reload data
+    await loadProducts('all');
+    await loadMyOrders();
+    
+  } catch (err) {
+    showToast(t('error_occurred') + err.message, 'error');
+    setLoading('btnCartOrder', false);
   }
 }
 
@@ -909,12 +1661,18 @@ let currentCarouselIndex = 0;
 let carouselImages = [];
 
 async function openProductDetail(prodId) {
-  let p = products.find(prod => prod.id === prodId);
-  if (!p) {
+  let p = null;
+  try {
     const { data } = await supabase.from('products')
       .select('id, title, description, price, images, category, seller_id, condition, stock, status, profiles(name, store_name, partner_type, location_province, location_district, location_address, location_coords, profile_image)')
       .eq('id', prodId).single();
     p = data;
+  } catch (err) {
+    console.error("Stale product query error, fallback to cached list:", err);
+  }
+  
+  if (!p) {
+    p = products.find(prod => prod.id === prodId);
   }
   if (!p) return;
   
@@ -931,21 +1689,45 @@ async function openProductDetail(prodId) {
   
   // Seller info
   const storeName = p.profiles?.store_name || p.profiles?.name || t('role_seller');
-  document.getElementById('detailStoreName').textContent = storeName;
+  const storeNameEl = document.getElementById('detailStoreName');
+  if (storeNameEl) storeNameEl.textContent = storeName;
   
-  const logoHtml = p.profiles?.profile_image ? `<img src="${p.profiles.profile_image}">` : avatarEmoji(storeName);
-  document.getElementById('detailStoreAvatar').innerHTML = logoHtml;
+  const storeAvatarEl = document.getElementById('detailStoreAvatar');
+  if (storeAvatarEl) {
+    const logoHtml = p.profiles?.profile_image ? `<img src="${p.profiles.profile_image}">` : avatarEmoji(storeName);
+    storeAvatarEl.innerHTML = logoHtml;
+  }
   
-  const province = p.profiles?.location_province || 'Bangkok';
-  const districtText = p.profiles?.location_district ? ` - ${p.profiles.location_district}` : '';
-  document.getElementById('detailStoreLoc').textContent = `📍 ${province}${districtText}`;
-  document.getElementById('detailStoreAddress').textContent = `🏡 ${p.profiles?.location_address || t('no_address_info')}`;
+  const storeLocEl = document.getElementById('detailStoreLoc');
+  if (storeLocEl) {
+    let province = p.profiles?.location_province || 'Bangkok';
+    let districtText = p.profiles?.location_district ? ` - ${p.profiles.location_district}` : '';
+    
+    // Auto-detect and parse Korean province/district if location_address matches Korean province
+    const addr = p.profiles?.location_address || '';
+    if (addr) {
+      const parsedKr = typeof parseKoreanAddress === 'function' ? parseKoreanAddress(addr) : null;
+      if (parsedKr) {
+        province = parsedKr.province;
+        districtText = parsedKr.district ? ` - ${parsedKr.district}` : '';
+      }
+    }
+    
+    storeLocEl.textContent = `📍 ${province}${districtText}`;
+  }
+
+  const storeAddressEl = document.getElementById('detailStoreAddress');
+  if (storeAddressEl) {
+    storeAddressEl.textContent = `🏡 ${p.profiles?.location_address || t('no_address_info')}`;
+  }
   
   const mapLinkContainer = document.getElementById('detailMapLink');
-  if (p.profiles?.location_coords) {
-    mapLinkContainer.innerHTML = `<a href="https://maps.google.com/?q=${p.profiles.location_coords}" target="_blank" class="badge bg-blue" style="font-weight:700; font-size:10px; padding:4px 8px; display:inline-block; margin-top:4px;">${t('view_on_map')}</a>`;
-  } else {
-    mapLinkContainer.innerHTML = '';
+  if (mapLinkContainer) {
+    if (p.profiles?.location_coords) {
+      mapLinkContainer.innerHTML = `<a href="https://maps.google.com/?q=${p.profiles.location_coords}" target="_blank" class="badge bg-blue" style="font-weight:700; font-size:10px; padding:4px 8px; display:inline-block; margin-top:4px;">${t('view_on_map')}</a>`;
+    } else {
+      mapLinkContainer.innerHTML = '';
+    }
   }
 
   // Load images
@@ -1078,6 +1860,7 @@ async function openChatFromDetail() {
     window.location.href = 'login.html';
     return;
   }
+  currentUserId = user.id;
   
   if (!currentProd) return;
   
@@ -1156,8 +1939,7 @@ async function loadChatMessages(roomId) {
       return;
     }
     
-    const { data: { user } } = await supabase.auth.getUser();
-    container.innerHTML = msgs.map(m => renderMessageRow(m, user.id)).join('');
+    container.innerHTML = msgs.map(m => renderMessageRow(m, currentUserId)).join('');
     scrollToBottom('chatMessagesBody');
   } catch (err) {
     container.innerHTML = `<div class="empty">${t('chat_load_failed')}</div>`;
@@ -1201,43 +1983,60 @@ function subscribeToChatMessages(roomId) {
       table: 'chat_messages',
       filter: `room_id=eq.${roomId}`
     }, async (payload) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (payload.new.sender_id !== user.id) {
-        markMessagesAsRead(roomId, user.id);
+      // Only append message in subscription if it's from the other user
+      // (since we already do local echo for our own sent messages)
+      if (payload.new.sender_id !== currentUserId) {
+        markMessagesAsRead(roomId, currentUserId);
+        
+        const container = document.getElementById('chatMessagesBody');
+        const emptyEl = container.querySelector('.empty');
+        if (emptyEl) emptyEl.remove();
+        
+        const rowHtml = renderMessageRow(payload.new, currentUserId);
+        container.insertAdjacentHTML('beforeend', rowHtml);
+        scrollToBottom('chatMessagesBody');
       }
-      const container = document.getElementById('chatMessagesBody');
-      
-      // 만약 기존에 empty 안내문구가 있었다면 제거
-      const emptyEl = container.querySelector('.empty');
-      if (emptyEl) emptyEl.remove();
-      
-      const rowHtml = renderMessageRow(payload.new, user.id);
-      container.insertAdjacentHTML('beforeend', rowHtml);
-      scrollToBottom('chatMessagesBody');
     })
-    .subscribe();
+    .subscribe((status) => {
+      console.log(`[Bandding Market] Realtime status: ${status} for room: ${roomId}`);
+    });
 }
 
 async function sendChatMessage() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
-  if (!text || !currentChatRoomId) return;
+  if (!text || !currentChatRoomId || !currentUserId) return;
   
   // 직거래 우회 방지 필터링 실행
   const filtered = filterBypassKeywords(text);
   
+  // Local Echo: immediately append message to chat container
+  const container = document.getElementById('chatMessagesBody');
+  const emptyEl = container.querySelector('.empty');
+  if (emptyEl) emptyEl.remove();
+  
+  const tempMsg = {
+    room_id: currentChatRoomId,
+    sender_id: currentUserId,
+    message: filtered,
+    message_type: 'text',
+    created_at: new Date().toISOString()
+  };
+  const rowHtml = renderMessageRow(tempMsg, currentUserId);
+  container.insertAdjacentHTML('beforeend', rowHtml);
+  scrollToBottom('chatMessagesBody');
+  
+  input.value = '';
+  
   try {
-    const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from('chat_messages').insert({
       room_id: currentChatRoomId,
-      sender_id: user.id,
+      sender_id: currentUserId,
       message: filtered,
       message_type: 'text'
     });
     
     if (error) throw error;
-    
-    input.value = '';
     
     if (text !== filtered) {
       showToast(t('toast_bypass_filtered'), 'error');
@@ -1515,6 +2314,7 @@ async function loadMyInquiries() {
 async function openChatRoom(roomId, sellerName) {
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
+    currentUserId = user.id;
     await markMessagesAsRead(roomId, user.id);
   }
   
