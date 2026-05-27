@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>반띵마켓 관리자 포탈</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="db-wrap">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-head">
+      <a href="../index.html" class="nav-logo">
+        <div class="nav-logo-icon">🌓</div>
+        <span class="nav-logo-text">반띵마켓</span>
+      </a>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-sec-lbl">관리자 메뉴</div>
+      <button class="sb-link active" onclick="showPage('overview',this)"><span class="ico">📊</span> 개요</button>
+      <button class="sb-link" onclick="showPage('store-settings',this)"><span class="ico">⚙️</span> 상점 설정</button>
+      <button class="sb-link" onclick="showPage('buyers',this)"><span class="ico">👥</span> 구매자 관리</button>
+      <button class="sb-link" onclick="showPage('products',this)"><span class="ico">📱</span> 전체 상품</button>
+      <button class="sb-link" onclick="showPage('orders',this)"><span class="ico">📦</span> 주문 내역</button>
+      <button class="sb-link" onclick="showPage('chat-rooms',this)"><span class="ico">💬</span> 채팅방 관리</button>
+      <button class="sb-link" onclick="showPage('media',this)"><span class="ico">🖼️</span> 채팅 미디어 관리</button>
+      <div class="sb-sec-lbl">바로가기</div>
+      <a class="sb-link" href="../index.html"><span class="ico">🏠</span> 메인 홈</a>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-user">
+        <div class="sb-avatar">👑</div>
+        <div>
+          <div class="sb-uname" id="adminName">관리자</div>
+          <div class="sb-urole">Admin</div>
+        </div>
+      </div>
+      <button class="btn-nav btn-nav-outline" style="width:100%;margin-top:12px;justify-content:center;" onclick="doLogout()">🚪 로그아웃</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== OVERVIEW ===== -->
+    <div id="page-overview">
+      <div class="main-hd"><h1>📊 관리자 개요</h1><span id="adminDate" style="color:var(--t2);font-size:13px;"></span></div>
+      <div class="main-body">
+        <div class="stat-grid" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="stat-card">
+            <div class="sc-icon" style="background:rgba(139,92,246,.15);">👥</div>
+            <div class="sc-val" id="aUsers">—</div><div class="sc-lbl">전체 고객</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon" style="background:rgba(16,185,129,.15);">📱</div>
+            <div class="sc-val" id="aProds">—</div><div class="sc-lbl">등록 상품</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon" style="background:rgba(34,211,238,.15);">📦</div>
+            <div class="sc-val" id="aOrders">—</div><div class="sc-lbl">전체 주문</div>
+          </div>
+          <div class="stat-card">
+            <div class="sc-icon" style="background:rgba(251,191,36,.15);">💰</div>
+            <div class="sc-val" id="aRevenue">—</div><div class="sc-lbl">총 매출액</div>
+          </div>
+        </div>
+
+
+
+        <div class="card">
+          <h3 style="font-family:'Outfit',sans-serif;font-weight:700;margin-bottom:18px;">최근 주문 현황</h3>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>구매자</th>
+                  <th>상품</th>
+                  <th>금액</th>
+                  <th>결제수단</th>
+                  <th>날짜</th>
+                  <th>상태</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrdersTbl">
+                <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== STORE SETTINGS ===== -->
+    <div id="page-store-settings" style="display:none;">
+      <div class="main-hd">
+        <h1>⚙️ 반띵마켓 상점 프로필 설정</h1>
+      </div>
+      <div class="main-body">
+        <div class="card" style="max-width: 600px; padding:24px;">
+          <div style="text-align:center;margin-bottom:20px;">
+            <div class="s-avatar" style="width:80px;height:80px;font-size:32px;margin:0 auto 10px;" id="profAvatarPreview">🏪</div>
+            <label style="cursor:pointer;">
+              <span class="btn-sm btn-purple" style="font-size:11px; padding:6px 12px;">📷 사진 변경</span>
+              <input type="file" id="profImg" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-label">담당 관리자명</label>
+            <input type="text" class="form-input" id="profName" placeholder="관리자">
+          </div>
+          <div class="form-group">
+            <label class="form-label">전화번호</label>
+            <input type="text" class="form-input" id="profPhone" disabled style="opacity:.6;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">상점명</label>
+            <input type="text" class="form-input" id="profStore" placeholder="반띵마켓">
+          </div>
+          <div class="form-group">
+            <label class="form-label">상점 상세 주소</label>
+            <textarea class="form-textarea" id="profAddress" placeholder="예: 서울시 마포구 백범로 ..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">상점 소개</label>
+            <textarea class="form-textarea" id="profDesc" placeholder="반값 할인 아웃렛 마트 반띵마켓입니다."></textarea>
+          </div>
+          <button class="btn-submit" id="btnSaveProfile" onclick="saveProfile()" style="margin-top:20px;">💾 설정 저장하기</button>
+        </div>
+      </div>
+    </div>
+    <!-- ===== BUYERS ===== -->
+    <div id="page-buyers" style="display:none;">
+      <div class="main-hd"><h1>👥 구매자 관리</h1></div>
+      <div class="main-body">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>이름</th><th>전화번호</th><th>가입일</th><th>주문수</th><th>처리</th></tr></thead>
+            <tbody id="buyersTbl"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRODUCTS ===== -->
+    <div id="page-products" style="display:none;">
+      <div class="main-hd">
+        <h1>📱 전체 상품</h1>
+        <button class="btn-nav" onclick="openAddProduct()" style="padding: 6px 12px; font-size: 11px;">➕ 상품 등록</button>
+      </div>
+      <div class="main-body">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>상품명</th><th>등급</th><th>카테고리</th><th>가격</th><th>재고</th><th>상태</th><th>등록일</th><th>처리</th></tr></thead>
+            <tbody id="allProductsTbl"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ORDERS & SETTLEMENTS ===== -->
+    <div id="page-orders" style="display:none;">
+      <div class="main-hd"><h1>📦 전체 주문 내역</h1></div>
+      <div class="main-body">
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>주문번호</th>
+                  <th>구매자/배송지</th>
+                  <th>상품/수량</th>
+                  <th>총금액</th>
+                  <th>결제방식/입금 상태</th>
+                  <th>날짜</th>
+                  <th>주문상태</th>
+                  <th>주문관리</th>
+                  <th>삭제</th>
+                </tr>
+              </thead>
+              <tbody id="allOrdersTbl">
+                <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHAT ROOMS MANAGEMENT ===== -->
+    <div id="page-chat-rooms" style="display:none;">
+      <div class="main-hd">
+        <h1>💬 채팅방 관리</h1>
+      </div>
+      <div class="main-body">
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>방 번호 (Room ID)</th>
+                  <th>관련 상품</th>
+                  <th>구매자</th>
+                  <th>판매자</th>
+                  <th>마지막 대화일</th>
+                  <th>처리</th>
+                </tr>
+              </thead>
+              <tbody id="chatRoomsTbl">
+                <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHAT MEDIA MANAGEMENT ===== -->
+    <div id="page-media" style="display:none;">
+      <div class="main-hd">
+        <h1>🖼️ 채팅 미디어 관리</h1>
+        <span class="badge bg-purple" id="mediaCount">미디어 0개</span>
+      </div>
+      <div class="main-body">
+        <div class="card" style="padding: 18px; margin-bottom: 20px; background: rgba(139, 92, 246, 0.05); border: 1px dashed var(--border2); font-size: 13px; color: var(--t2); line-height: 1.5;">
+          💡 대화방에 업로드된 사진 및 동영상을 <b>오래된 등록일 순(Oldest First)</b>으로 확인하고 불필요한 미디어를 수동으로 영구 삭제하여 서버 용량을 확보할 수 있습니다.
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>미디어 파일</th>
+                <th>유형</th>
+                <th>대화방 정보</th>
+                <th>등록한 사람</th>
+                <th>등록 날짜</th>
+                <th>처리</th>
+              </tr>
+            </thead>
+            <tbody id="mediaTbl">
+              <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">로딩 중…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- PARTNER CONFIG MODAL -->
+<div class="modal-bg" id="partnerModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-hd">
+      <span class="modal-title">🏪 판매 파트너 설정</span>
+      <button class="modal-x" onclick="closePartnerModal()">✕</button>
+    </div>
+    <div>
+      <input type="hidden" id="confSellerId">
+      <div class="form-group">
+        <label class="form-label">매장명</label>
+        <input type="text" class="form-input" id="confStoreName" disabled style="opacity:0.7;">
+      </div>
+      <div class="form-group">
+        <label class="form-label">파트너 구분</label>
+        <select class="form-input" id="confPartnerType">
+          <option value="subsidiary">본사 직영점 (자회사)</option>
+          <option value="partner">외부 입점 대리점 (협력사)</option>
+        </select>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div class="form-group">
+          <label class="form-label">수수료율 (%)</label>
+          <input type="number" class="form-input" id="confCommRate" step="0.1" value="10.0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">정산 방식</label>
+          <select class="form-input" id="confPayoutMethod">
+            <option value="parent_payment">플랫폼 직접 수금 후 정산</option>
+            <option value="cod_commission">COD 배송후 협력사에서 송금</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">매장 소속 지역 (Province)</label>
+        <select class="form-input" id="confProvince">
+          <option value="">선택해주세요</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">매장 소속 구/군 (District)</label>
+        <select class="form-input" id="confDistrict">
+          <option value="">선택해주세요</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">매장 주소</label>
+        <textarea class="form-textarea" id="confAddress"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">지도 GPS 좌표</label>
+        <input type="text" class="form-input" id="confCoords" placeholder="예: 13.7563, 100.5018">
+      </div>
+    </div>
+    <div style="display:flex; gap:12px; margin-top:16px;">
+      <button class="btn-submit" onclick="savePartnerConfig()" style="flex:1;">💾 설정 저장</button>
+      <button class="btn-sm btn-red" onclick="closePartnerModal()" style="padding:14px 20px; border-radius:var(--r);">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUYER ORDERS MODAL -->
+<div class="modal-bg" id="buyerOrdersModal">
+  <div class="modal" style="max-width:800px; width:90%;">
+    <div class="modal-hd">
+      <span class="modal-title" id="buyerOrdersTitle">📦 구매자 주문 내역</span>
+      <button class="modal-x" onclick="closeBuyerOrdersModal()">✕</button>
+    </div>
+    <div class="tbl-wrap" style="max-height:400px; overflow-y:auto;">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>주문일자</th>
+            <th>상품명</th>
+            <th>총 금액</th>
+            <th>상태</th>
+            <th>주문관리</th>
+          </tr>
+        </thead>
+        <tbody id="buyerOrdersTblBody">
+          <!-- JS dynamic insertion -->
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <button class="btn-sm btn-red" onclick="closeBuyerOrdersModal()" style="padding:10px 20px; border-radius:var(--r); border:1px solid rgba(239,68,68,.3);">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT HISTORY MODAL -->
+<div class="modal-bg" id="chatHistoryModal">
+  <div class="modal" style="max-width:600px; width:90%;">
+    <div class="modal-hd">
+      <span class="modal-title" id="chatHistoryTitle">💬 대화 기록 보기</span>
+      <button class="modal-x" onclick="closeChatHistoryModal()">✕</button>
+    </div>
+    <div id="chatHistoryBody" style="max-height:450px; overflow-y:auto; padding:12px; background:var(--bg); border-radius:var(--r-sm); display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+      <!-- JS dynamic insertion -->
+    </div>
+    <div style="display:flex; justify-content:flex-end;">
+      <button class="btn-sm btn-red" onclick="closeChatHistoryModal()" style="padding:10px 20px; border-radius:var(--r); border:1px solid rgba(239,68,68,.3);">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT PRODUCT MODAL -->
+<div class="modal-bg" id="prodModal">
+  <div class="modal" style="max-width:440px; padding:20px;">
+    <div class="modal-hd" style="margin-bottom:16px;">
+      <span class="modal-title" id="prodModalTitle">📱 상품 등록</span>
+      <button class="modal-x" onclick="closeProdModal()">✕</button>
+    </div>
+    <div style="overflow-y:auto; max-height:65vh; padding-right:4px;">
+      <input type="hidden" id="editProductId">
+      <div class="form-group"><label class="form-label">상품명 *</label><input type="text" class="form-input" id="pTitle" placeholder="예: [특가] 신선 사과 5kg"></div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label class="form-label">가격 (₩) *</label>
+          <input type="number" class="form-input" id="pPrice" placeholder="15000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">카테고리 *</label>
+          <select class="form-select" id="pCat">
+            <option value="Food">🍏 식품</option>
+            <option value="Cosmetics">💄 화장품</option>
+            <option value="Clothing">👕 의류</option>
+            <option value="Electronics">⚡ 전자제품</option>
+            <option value="Other">📦 기타</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label class="form-label">상품 등급 / 상태 *</label>
+          <select class="form-select" id="pCondition">
+            <option value="New">🍏 새상품 (New)</option>
+            <option value="Used S">⭐ S급 중고 (Used S)</option>
+            <option value="Used A">✨ A급 중고 (Used A)</option>
+            <option value="Used B">👍 B급 중고 (Used B)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">재고 수량 *</label>
+          <input type="number" class="form-input" id="pStock" value="1" min="0">
+        </div>
+      </div>
+
+      <div class="form-group"><label class="form-label">상품 설명</label><textarea class="form-textarea" id="pDesc" placeholder="상품 세부 정보 설명"></textarea></div>
+      
+      <div class="form-group">
+        <label class="form-label">상품 사진 (최대 10장)</label>
+        <div class="img-upload" onclick="document.getElementById('pImgInput').click()" style="padding:20px; border:2px dashed var(--border); border-radius:10px; text-align:center; cursor:pointer;">
+          <div class="img-upload-ico" style="font-size:24px; margin-bottom:4px;">📷</div>
+          <div class="img-upload-txt" style="font-size:11px;">클릭하여 사진 선택 (max 10장)</div>
+        </div>
+        <input type="file" id="pImgInput" accept="image/*" multiple style="display:none;" onchange="previewImages(this)">
+        <div class="preview-grid" id="imgPreviews"></div>
+        <div id="existingImages" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn-submit" id="btnSaveProd" onclick="saveProduct()" style="flex:1; margin-top:0;">💾 저장</button>
+      <button class="btn-sm btn-red" onclick="closeProdModal()" style="padding:12px 16px;border-radius:var(--r-sm);">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="globalToast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/thailand-addresses.js"></script>
+<script src="../js/config.js"></script>
+<script>
+async function init() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) { window.location.href = '../login.html'; return; }
+  const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  if (!p || p.role !== 'admin') { window.location.href = '../index.html'; return; }
+  
+  myProfile = p;
+  document.getElementById('adminName').textContent = p.name;
+  document.getElementById('adminDate').textContent = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Fill store settings form
+  document.getElementById('profName').value = p.name || '';
+  document.getElementById('profPhone').value = '+' + p.phone;
+  document.getElementById('profStore').value = p.store_name || '';
+  document.getElementById('profAddress').value = p.location_address || '';
+  document.getElementById('profDesc').value = p.description || '';
+  if (p.profile_image) {
+    document.getElementById('profAvatarPreview').innerHTML = `<img src="${p.profile_image}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }
+
+  await refreshAll();
+}
+
+let myProfile = null;
+let editingProduct = null;
+let newImageFiles = [];
+let removedImages = [];
+
+async function refreshAll() {
+  await Promise.all([loadStats(), loadRecentOrders(), loadBuyers(), loadAllProducts(), loadAllOrders()]);
+}
+
+async function loadStats() {
+  const [users, prods, orders, revenue] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'buyer'),
+    supabase.from('products').select('*', { count: 'exact', head: true }),
+    supabase.from('orders').select('*', { count: 'exact', head: true }),
+    supabase.from('orders').select('total_price').eq('status', 'completed')
+  ]);
+  document.getElementById('aUsers').textContent = users.count || 0;
+  document.getElementById('aProds').textContent = prods.count || 0;
+  document.getElementById('aOrders').textContent = orders.count || 0;
+  
+  const total = (revenue.data || []).reduce((s, o) => s + Number(o.total_price), 0);
+  document.getElementById('aRevenue').textContent = formatPrice(total);
+}
+
+async function loadRecentOrders() {
+  const { data } = await supabase.from('orders')
+    .select('*, products(title), buyer:profiles!orders_buyer_id_fkey(name)')
+    .order('created_at', { ascending: false }).limit(8);
+  const tbody = document.getElementById('recentOrdersTbl');
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--t3);">주문 없음</td></tr>'; return; }
+  
+  tbody.innerHTML = data.map(o => {
+    const buyer = o.buyer?.name || '—';
+    const isCOD = o.payment_method === 'cod';
+    const payMethodText = isCOD ? '<span style="color:var(--red);">COD (현금)</span>' : '<span style="color:var(--green);">온라인 송금</span>';
+
+    return `
+      <tr>
+        <td>${buyer}</td>
+        <td>${o.products?.title || '—'}</td>
+        <td style="color:var(--gold);font-weight:700;">${formatPrice(o.total_price)}</td>
+        <td style="font-size:12px;">${payMethodText}</td>
+        <td style="font-size:12px;color:var(--t3);">${formatDate(o.created_at)}</td>
+        <td><span class="badge ${statusBadge(o.status)}">${statusText(o.status)}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function loadBuyers() {
+  const { data } = await supabase.from('profiles')
+    .select('*, orders:orders!orders_buyer_id_fkey(id, status, total_price, created_at, payment_method)')
+    .eq('role', 'buyer')
+    .order('created_at', { ascending: false });
+    
+  const tbody = document.getElementById('buyersTbl');
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--t3);">구매자 없음</td></tr>'; return; }
+  
+  tbody.innerHTML = data.map(b => {
+    const orderCount = b.orders?.length || 0;
+    const ordersJson = encodeURIComponent(JSON.stringify(b.orders || []));
+    return `
+      <tr>
+        <td style="font-weight:600;color:var(--t1);">${b.name}</td>
+        <td>+${b.phone}</td>
+        <td style="font-size:12px;color:var(--t3);">${formatDate(b.created_at)}</td>
+        <td>
+          <button class="btn-sm btn-purple" onclick="openBuyerOrders('${b.id}', '${ordersJson}', '${b.name.replace(/'/g, "\\'")}')">
+            📦 주문 내역 (${orderCount}건)
+          </button>
+        </td>
+        <td>
+          <button class="btn-sm btn-green" onclick="initiatePinReset('${b.id}', '${b.phone}')">🔑 PIN</button>
+          <button class="btn-sm btn-red" style="margin-left:4px;" onclick="deleteUser('${b.id}')">🗑️ 삭제</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function deleteUser(id) {
+  if (!confirm('정말 삭제하시겠습니까?')) return;
+  const { error } = await supabase.from('profiles').delete().eq('id', id);
+  if (error) { showToast('❌ 삭제 실패: ' + error.message, 'error'); return; }
+  showToast('🗑️ 회원이 삭제됐습니다.');
+  await refreshAll();
+}
+
+async function initiatePinReset(userId, phone) {
+  const newPin = prompt(`해당 회원의 새로운 4자리 PIN 번호를 입력하세요 (예: 1234):`);
+  if (newPin === null) return;
+  if (!/^\d{4}$/.test(newPin)) {
+    showToast('⚠️ PIN 번호는 반드시 숫자 4자리여야 합니다.', 'error');
+    return;
+  }
+  const { error } = await supabase.rpc('reset_user_pin', {
+    user_id: userId,
+    user_phone: phone,
+    new_pin: newPin
+  });
+  if (error) { showToast('❌ PIN 초기화 실패: ' + error.message, 'error'); return; }
+  showToast('🔑 PIN 번호가 성공적으로 초기화되었습니다!', 'success');
+}
+
+async function loadAllProducts() {
+  const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+  const tbody = document.getElementById('allProductsTbl');
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--t3);">상품 없음</td></tr>'; return; }
+  tbody.innerHTML = data.map(p => {
+    const condition = p.condition || 'New';
+    return `
+      <tr>
+        <td style="font-weight:600;color:var(--t1);max-width:180px;">${p.title}</td>
+        <td><span class="badge bg-purple">${condition}</span></td>
+        <td><span class="badge bg-gray">${p.category}</span></td>
+        <td style="color:var(--gold);font-weight:700;">${formatPrice(p.price)}</td>
+        <td>${p.stock}</td>
+        <td><span class="badge ${p.status === 'active' ? 'bg-green' : 'bg-gray'}">${p.status === 'active' ? '판매중' : '숨김'}</span></td>
+        <td style="font-size:12px;color:var(--t3);">${formatDate(p.created_at)}</td>
+        <td>
+          <button class="btn-sm btn-purple" onclick="editProduct('${p.id}')">✏️ 수정</button>
+          <button class="btn-sm btn-green" onclick="toggleStatus('${p.id}','${p.status}')" style="margin-left:4px;">${p.status === 'active' ? '숨기기' : '보이기'}</button>
+          <button class="btn-sm btn-red" onclick="adminDeleteProduct('${p.id}')" style="margin-left:4px;">🗑️ 삭제</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function toggleStatus(id, current) {
+  const next = current === 'active' ? 'hidden' : 'active';
+  await supabase.from('products').update({ status: next }).eq('id', id);
+  showToast(next === 'active' ? '✅ 상품이 공개되었습니다.' : '🙈 상품이 숨겨졌습니다.');
+  await loadAllProducts();
+}
+
+function openAddProduct() {
+  editingProduct = null;
+  newImageFiles = [];
+  document.getElementById('editProductId').value = '';
+  document.getElementById('prodModalTitle').textContent = '📱 상품 등록';
+  document.getElementById('pTitle').value = '';
+  document.getElementById('pPrice').value = '';
+  document.getElementById('pCat').value = 'Food';
+  document.getElementById('pCondition').value = 'New';
+  document.getElementById('pStock').value = '1';
+  document.getElementById('pDesc').value = '';
+  document.getElementById('imgPreviews').innerHTML = '';
+  document.getElementById('existingImages').innerHTML = '';
+  document.getElementById('prodModal').classList.add('open');
+}
+
+async function editProduct(id, useExisting = false) {
+  let p;
+  if (useExisting && editingProduct && editingProduct.id === id) {
+    p = editingProduct;
+  } else {
+    const { data } = await supabase.from('products').select('*').eq('id', id).single();
+    if (!data) return;
+    p = data;
+    editingProduct = p;
+    newImageFiles = [];
+    removedImages = [];
+  }
+  
+  document.getElementById('editProductId').value = p.id;
+  document.getElementById('prodModalTitle').textContent = '✏️ 상품 수정';
+  document.getElementById('pTitle').value = p.title;
+  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pCat').value = p.category || 'Food';
+  document.getElementById('pCondition').value = p.condition || 'New';
+  document.getElementById('pStock').value = p.stock || 1;
+  document.getElementById('pDesc').value = p.description || '';
+  document.getElementById('imgPreviews').innerHTML = '';
+  document.getElementById('existingImages').innerHTML = (p.images || []).map((url, i) =>
+    `<div style="position:relative;display:inline-block;margin-right:8px;margin-top:8px;">
+      <img src="${url}" class="prev-img" style="width:60px; height:60px; object-fit:cover; border-radius:6px;">
+      <button onclick="event.stopPropagation(); removeExistingImg(${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.3);">✕</button>
+     </div>`
+  ).join('');
+  document.getElementById('prodModal').classList.add('open');
+}
+
+function removeExistingImg(i) {
+  if (editingProduct) { 
+    removedImages.push(editingProduct.images[i]); 
+    editingProduct.images.splice(i, 1); 
+    editProduct(editingProduct.id, true); 
+  }
+}
+
+function previewImages(input) {
+  const existingCount = editingProduct && editingProduct.images ? editingProduct.images.length : 0;
+  const maxAllowed = 10 - existingCount;
+  const files = Array.from(input.files).slice(0, maxAllowed);
+  newImageFiles = files;
+  const prev = document.getElementById('imgPreviews');
+  prev.innerHTML = '';
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = e => { 
+      const img = document.createElement('img'); 
+      img.src = e.target.result; 
+      img.className = 'prev-img'; 
+      img.style.width = '60px'; 
+      img.style.height = '60px'; 
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '6px';
+      img.style.marginRight = '8px';
+      img.style.marginTop = '8px';
+      prev.appendChild(img); 
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function closeProdModal() {
+  document.getElementById('prodModal').classList.remove('open');
+}
+
+async function saveProduct() {
+  const title = document.getElementById('pTitle').value.trim();
+  const price = document.getElementById('pPrice').value;
+  const cat = document.getElementById('pCat').value;
+  const cond = document.getElementById('pCondition').value;
+  const stock = document.getElementById('pStock').value;
+  const desc = document.getElementById('pDesc').value.trim();
+  if (!title || !price) { showToast('❌ 상품명과 가격은 필수입니다.', 'error'); return; }
+
+  setLoading('btnSaveProd', true, '저장 중...');
+
+  let imageUrls = editingProduct ? [...(editingProduct.images || [])] : [];
+  for (const file of newImageFiles) {
+    const compressedFile = await resizeAndCompressImage(file);
+    const path = `${myProfile.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    const { error: upErr } = await supabase.storage.from('products').upload(path, compressedFile);
+    if (upErr) {
+      console.error("Image upload error:", upErr);
+    } else {
+      const { data: urlData } = supabase.storage.from('products').getPublicUrl(path);
+      imageUrls.push(urlData.publicUrl);
+    }
+  }
+
+  const payload = { title, price: Number(price), category: cat, condition: cond, stock: Number(stock), description: desc, images: imageUrls };
+  let error;
+  if (editingProduct) {
+    ({ error } = await supabase.from('products').update(payload).eq('id', editingProduct.id));
+    if (!error && removedImages.length > 0) {
+      const pathsToDelete = removedImages.map(url => {
+         const parts = url.split('/products/');
+         return parts.length > 1 ? parts[1] : null;
+      }).filter(Boolean);
+      if (pathsToDelete.length > 0) {
+        await supabase.storage.from('products').remove(pathsToDelete);
+      }
+      removedImages = [];
+    }
+  } else {
+    ({ error } = await supabase.from('products').insert({ ...payload, seller_id: myProfile.id }));
+  }
+
+  setLoading('btnSaveProd', false);
+  if (error) { showToast('❌ 저장 오류: ' + error.message, 'error'); return; }
+  showToast('✅ 상품이 성공적으로 저장되었습니다!', 'success');
+  newImageFiles = [];
+  closeProdModal();
+  await loadAllProducts();
+  await loadStats();
+}
+
+async function adminDeleteProduct(id) {
+  if (!confirm('이 상품을 정말 삭제하시겠습니까?')) return;
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) {
+    if (error.code === '23503' || error.message.includes('foreign key constraint')) {
+      const { error: hideErr } = await supabase.from('products').update({ status: 'hidden' }).eq('id', id);
+      if (hideErr) { showToast('❌ 상품 숨김 실패: ' + hideErr.message, 'error'); }
+      else { showToast('🙈 주문 내역이 존재하여 상품을 안전하게 숨김 처리했습니다.', 'success'); await loadAllProducts(); }
+    } else {
+      showToast('❌ 삭제 실패: ' + error.message, 'error');
+    }
+    return;
+  }
+  showToast('🗑️ 상품이 삭제됐습니다.');
+  await loadAllProducts(); await loadStats();
+}
+
+async function loadAllOrders() {
+  const { data } = await supabase.from('orders')
+    .select('*, products(title), buyer:profiles!orders_buyer_id_fkey(name, phone, location_address)')
+    .order('created_at', { ascending: false });
+  const tbody = document.getElementById('allOrdersTbl');
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--t3);">주문 없음</td></tr>'; return; }
+  
+  tbody.innerHTML = data.map(o => {
+    const buyerName = o.buyer?.name || '—';
+    const buyerPhone = o.buyer?.phone ? '+' + o.buyer.phone : '';
+    const delivery = o.delivery_address || '주소 정보 없음';
+    
+    const isCOD = o.payment_method === 'cod';
+    const paymentText = isCOD ? '<span class="badge bg-red">COD (현장결제)</span>' : '<span class="badge bg-green">온라인 송금</span>';
+    
+    const depositRequired = isCOD ? Math.round(Number(o.total_price) * 0.03) : Number(o.total_price);
+    const depositConfirmedBadge = o.deposit_confirmed 
+      ? '<div style="margin-top:4px;"><span class="badge bg-green" style="font-size:10px; padding:2px 6px;">✅ 입금확인됨</span></div>' 
+      : `<div style="margin-top:4px;"><span class="badge bg-yellow" style="font-size:10px; padding:2px 6px; font-weight:700;">⏳ 대기: ${formatPrice(depositRequired)} (${isCOD ? '3%' : '100%'})</span></div>`;
+    
+    let adminActions = '—';
+    if (o.status === 'pending') {
+      if (!o.deposit_confirmed) {
+        adminActions = `
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <button class="btn-sm btn-green" style="padding:4px 8px; font-size:11px; background:var(--purple-l); border-color:var(--purple-l);" onclick="confirmOrderDeposit('${o.id}')">💰 입금 확인</button>
+            <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'cancelled')">주문취소</button>
+          </div>
+        `;
+      } else {
+        adminActions = `
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <button class="btn-sm btn-green" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'confirmed')">배송 시작</button>
+            <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'cancelled')">주문취소</button>
+          </div>
+        `;
+      }
+    } else if (o.status === 'confirmed') {
+      adminActions = `
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <button class="btn-sm btn-blue" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'completed')">구매 확정</button>
+          <button class="btn-sm btn-red" style="padding:4px 8px; font-size:11px;" onclick="adminUpdateOrderStatus('${o.id}', 'cancelled')">반송/취소</button>
+        </div>
+      `;
+    }
+
+    return `
+      <tr>
+        <td style="font-size:11px;color:var(--t3);">${o.id.slice(0,8)}…</td>
+        <td>
+          <div style="font-weight:600;">${buyerName}</div>
+          <div style="font-size:11px;color:var(--t2);">${buyerPhone}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;max-width:150px;white-space:normal;line-height:1.2;">🏠 ${delivery}</div>
+        </td>
+        <td>
+          <div style="font-weight:500;font-size:12px;">${o.products?.title || '—'}</div>
+          <div style="font-size:11px;color:var(--t3);">${o.quantity} 개</div>
+        </td>
+        <td style="color:var(--gold);font-weight:700;">${formatPrice(o.total_price)}</td>
+        <td>
+          <div>${paymentText}</div>
+          ${depositConfirmedBadge}
+        </td>
+        <td style="font-size:12px;color:var(--t3);">${formatDate(o.created_at)}</td>
+        <td><span class="badge ${statusBadge(o.status)}">${statusText(o.status)}</span></td>
+        <td>${adminActions}</td>
+        <td>
+          <button class="btn-sm btn-red" style="background:rgba(239,68,68,.1); color:var(--red); border:1px solid rgba(239,68,68,.2);" onclick="adminDeleteOrder('${o.id}')">🗑️ 삭제</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function adminDeleteOrder(orderId) {
+  if (!confirm('이 주문 기록을 완전히 삭제하시겠습니까?')) return;
+  const { error } = await supabase.from('orders').delete().eq('id', orderId);
+  if (error) { showToast('❌ 주문 삭제 실패: ' + error.message, 'error'); return; }
+  showToast('🗑️ 주문 기록이 삭제되었습니다.');
+  await refreshAll();
+}
+
+async function confirmOrderDeposit(orderId) {
+  if (!confirm('해당 주문의 입금(온라인 100% 또는 COD 3%) 완료를 확인하셨습니까?')) return;
+  const { error } = await supabase.from('orders').update({ deposit_confirmed: true }).eq('id', orderId);
+  if (error) { showToast('❌ 입금 확인 처리 실패: ' + error.message, 'error'); return; }
+  showToast('💰 입금 확인 완료! 배송 준비 단계로 넘어갑니다.', 'success');
+  await refreshAll();
+}
+
+async function confirmOrderDepositFromModal(orderId) {
+  closeBuyerOrdersModal();
+  await confirmOrderDeposit(orderId);
+}
+
+async function adminUpdateOrderStatus(orderId, nextStatus) {
+  let trackingCompany = null;
+  let trackingNumber = null;
+  
+  if (nextStatus === 'confirmed') {
+    const trackingInput = prompt("배송 정보를 입력하세요. (형식: 택배사/송장번호, 예: CJ대한통운/CJ123456789)\n입력하지 않으면 기본 가상 송장으로 입력됩니다.");
+    if (trackingInput === null) return;
+    if (trackingInput.trim()) {
+      const parts = trackingInput.split('/');
+      trackingCompany = parts[0]?.trim() || 'CJ대한통운';
+      trackingNumber = parts[1]?.trim() || 'CJ' + Math.floor(Math.random() * 100000000);
+    } else {
+      trackingCompany = 'CJ대한통운';
+      trackingNumber = 'CJ' + Math.floor(Math.random() * 100000000);
+    }
+  } else if (nextStatus === 'cancelled') {
+    if (!confirm("정말 이 주문을 취소/반송 처리하시겠습니까? (재고가 원복됩니다)")) return;
+  } else if (nextStatus === 'completed') {
+    if (!confirm("정말 이 주문을 구매승인 완료 처리하시겠습니까?")) return;
+  }
+  
+  const updatePayload = { status: nextStatus };
+  if (nextStatus === 'confirmed') {
+    updatePayload.tracking_company = trackingCompany;
+    updatePayload.tracking_number = trackingNumber;
+  }
+  
+  const { error } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+  if (error) { showToast('❌ 상태 업데이트 실패: ' + error.message, 'error'); return; }
+  showToast('🚀 주문 상태가 성공적으로 변경되었습니다.', 'success');
+  await refreshAll();
+}
+
+async function saveProfile() {
+  const name = document.getElementById('profName').value.trim();
+  const store = document.getElementById('profStore').value.trim();
+  const address = document.getElementById('profAddress').value.trim();
+  const desc = document.getElementById('profDesc').value.trim();
+  
+  if (!name || !store) { showToast('❌ 관리자명과 상점명은 필수입니다.', 'error'); return; }
+  
+  setLoading('btnSaveProfile', true, '저장 중...');
+  
+  let logoUrl = myProfile.profile_image;
+  const file = document.getElementById('profImg').files[0];
+  if (file) {
+    const compressedFile = await resizeAndCompressImage(file, 400, 0.8);
+    const path = `avatars/${myProfile.id}_logo.jpg`;
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, compressedFile, { upsert: true });
+    if (!upErr) {
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+      logoUrl = urlData.publicUrl;
+    }
+  }
+
+  const { error } = await supabase.from('profiles').update({
+    name,
+    store_name: store,
+    location_address: address,
+    description: desc,
+    profile_image: logoUrl
+  }).eq('id', myProfile.id);
+
+  setLoading('btnSaveProfile', false);
+  if (error) { showToast('❌ 프로필 저장 실패: ' + error.message, 'error'); return; }
+  showToast('✅ 프로필이 성공적으로 저장되었습니다!', 'success');
+  
+  // Refresh page data
+  myProfile.name = name;
+  myProfile.store_name = store;
+  myProfile.location_address = address;
+  myProfile.description = desc;
+  myProfile.profile_image = logoUrl;
+  
+  document.getElementById('adminName').textContent = name;
+  if (logoUrl) {
+    document.getElementById('profAvatarPreview').innerHTML = `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }
+}
+
+function previewAvatar(input) {
+  const file = input.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('profAvatarPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Sidebar view switching
+function showPage(pageId, btn) {
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    // Find sidebar link by pageId
+    const links = document.querySelectorAll('.sb-link');
+    links.forEach(l => {
+      const onclickAttr = l.getAttribute('onclick') || '';
+      if (onclickAttr.includes(pageId)) l.classList.add('active');
+    });
+  }
+  
+  document.getElementById('page-overview').style.display = pageId === 'overview' ? 'block' : 'none';
+  document.getElementById('page-store-settings').style.display = pageId === 'store-settings' ? 'block' : 'none';
+  document.getElementById('page-buyers').style.display = pageId === 'buyers' ? 'block' : 'none';
+  document.getElementById('page-products').style.display = pageId === 'products' ? 'block' : 'none';
+  document.getElementById('page-orders').style.display = pageId === 'orders' ? 'block' : 'none';
+}
+
+function doLogout() {
+  supabase.auth.signOut().then(() => { window.location.href = '../login.html'; });
+}
+
+// Helpers
+function statusBadge(s) {
+  return { pending: 'bg-yellow', confirmed: 'bg-blue', completed: 'bg-green', cancelled: 'bg-red' }[s] || 'bg-gray';
+}
+function statusText(s) {
+  return { pending: '대기중', confirmed: '배송중', completed: '구매확정', cancelled: '취소/반송' }[s] || s;
+}
+
+// Open buyer orders detail modal
+let currentBuyerOrders = [];
+function openBuyerOrders(buyerId, ordersJson, buyerName) {
+  const orders = JSON.parse(decodeURIComponent(ordersJson));
+  currentBuyerOrders = orders;
+  
+  document.getElementById('buyerOrdersTitle').textContent = `📦 ${buyerName} 님의 주문 내역`;
+  const tbody = document.getElementById('buyerOrdersTblBody');
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--t3);">주문 내역 없음</td></tr>';
+  } else {
+    tbody.innerHTML = orders.map(o => {
+      const isCOD = o.payment_method === 'cod';
+      const paymentText = isCOD ? 'COD' : '온라인';
+      const date = new Date(o.created_at).toLocaleDateString('ko-KR');
+      return `
+        <tr>
+          <td>${date}</td>
+          <td>${o.products?.title || '상품'}</td>
+          <td style="font-weight:700;">${formatPrice(o.total_price)} (${paymentText})</td>
+          <td><span class="badge ${statusBadge(o.status)}">${statusText(o.status)}</span></td>
+          <td>
+            ${o.status === 'pending' && !o.deposit_confirmed ? `<button class="btn-sm btn-purple" onclick="confirmOrderDepositFromModal('${o.id}')">💰 입금확인</button>` : '—'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+  document.getElementById('buyerOrdersModal').classList.add('open');
+}
+
+function closeBuyerOrdersModal() {
+  document.getElementById('buyerOrdersModal').classList.remove('open');
+}
+
+// Sync i18n placeholders and load everything
+window.onload = init;
+</script>
+</body>
+</html>

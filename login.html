@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="login">로그인 - 반띵마켓</title>
+  <meta name="description" content="Sign in or register to Phone Switch Hub.">
+  <script src="js/inapp-bypass.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      alert("JS Error: " + message + "\nLine: " + lineno + "\nFile: " + source);
+      return false;
+    };
+  </script>
+</head>
+<body>
+
+<div class="app-shell" style="padding-bottom:20px;">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-icon">🌓</div>
+      <span class="nav-logo-text" data-i18n="app_title">반띵마켓</span>
+    </a>
+    <div class="nav-links" style="display:flex; gap:8px; align-items:center;">
+      <select id="residenceSelect" class="lang-select" onchange="changeResidence(this.value)" style="min-width: 95px; padding-right: 20px;">
+        <option value="ko" data-i18n="residence_korea">🇰🇷 한국 거주</option>
+        <option value="th" data-i18n="residence_thailand">🇹🇭 태국 거주</option>
+      </select>
+      <select id="langSelect" class="lang-select" onchange="changeLanguage(this.value)">
+        <option value="ko">🇰🇷 KO</option>
+        <option value="th">🇹🇭 TH</option>
+      </select>
+    </div>
+  </nav>
+
+  <div class="auth-wrap" style="min-height:calc(100vh - 88px); display:flex; align-items:center; justify-content:center; padding:16px;">
+    <div class="auth-card" style="margin:0; width:100%; border:none; background:transparent; box-shadow:none; padding:16px;">
+      <!-- Logo -->
+      <div class="auth-logo">
+        <div class="icon">🌓</div>
+        <h1 data-i18n="app_title">반띵마켓</h1>
+        <p data-i18n="login_subtitle">전화번호로 간편하게 시작하세요</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="tab-btn active" id="tabA" onclick="switchForm('login')" data-i18n="login">🔑 로그인</button>
+        <button class="tab-btn" id="tabB" onclick="switchForm('reg')" data-i18n="register">📝 회원가입</button>
+      </div>
+
+      <!-- ===== LOGIN ===== -->
+      <div id="loginForm">
+        <div class="form-group">
+          <label class="form-label" data-i18n="phone_number">전화번호 / เบอร์โทร</label>
+          <div class="phone-row">
+            <select id="lCc" class="lang-select" style="min-width: 90px; padding-right: 20px;">
+              <option value="82">🇰🇷 +82</option>
+              <option value="66">🇹🇭 +66</option>
+            </select>
+            <input type="tel" class="form-input" id="lPhone" placeholder="1012345678" maxlength="10" inputmode="numeric" style="flex:1;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="login_pin_label">PIN 번호 (4자리) / PIN</label>
+          <div class="pin-row">
+            <input type="password" class="pin-box" id="l1" maxlength="1" inputmode="numeric">
+            <input type="password" class="pin-box" id="l2" maxlength="1" inputmode="numeric">
+            <input type="password" class="pin-box" id="l3" maxlength="1" inputmode="numeric">
+            <input type="password" class="pin-box" id="l4" maxlength="1" inputmode="numeric">
+          </div>
+        </div>
+        <div class="err" id="lErr" style="margin-bottom:12px;"></div>
+        <button class="btn-submit" id="btnLogin" onclick="doLogin()" data-i18n="login">🔑 로그인</button>
+        <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--t2);">
+          <span data-i18n="no_account">계정이 없으신가요?</span> <span style="color:var(--purple-l);cursor:pointer;font-weight:700;" onclick="switchForm('reg')" data-i18n="register">회원가입</span>
+        </p>
+      </div>
+
+      <!-- ===== REGISTER ===== -->
+      <div id="regForm" style="display:none;">
+        <div class="form-group">
+          <label class="form-label" data-i18n="register_name_label">이름 / ชื่อ</label>
+          <input type="text" class="form-input" id="rName" data-i18n="register_name_placeholder" placeholder="홍길동 / สมชาย">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="phone_number">전화번호 / เบอร์โทร</label>
+          <div class="phone-row">
+            <select id="rCc" class="lang-select" style="min-width: 90px; padding-right: 20px;">
+              <option value="82">🇰🇷 +82</option>
+              <option value="66">🇹🇭 +66</option>
+            </select>
+            <input type="tel" class="form-input" id="rPhone" placeholder="1012345678" maxlength="10" inputmode="numeric" style="flex:1;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="register_pin_label">PIN 번호 설정 (4자리) / ตั้ง PIN</label>
+          <div class="pin-row">
+            <input type="password" class="pin-box" id="r1" maxlength="1" inputmode="numeric">
+            <input type="password" class="pin-box" id="r2" maxlength="1" inputmode="numeric">
+            <input type="password" class="pin-box" id="r3" maxlength="1" inputmode="numeric">
+            <input type="password" class="pin-box" id="r4" maxlength="1" inputmode="numeric">
+          </div>
+        </div>
+        <div class="err" id="rErr" style="margin-bottom:12px;"></div>
+        <div class="ok" id="rOk" style="margin-bottom:12px;"></div>
+        <button class="btn-submit" id="btnReg" onclick="doRegister()" data-i18n="register">🚀 회원가입</button>
+        <p style="text-align:center;margin-top:18px;font-size:13px;color:var(--t2);">
+          <span data-i18n="already_have_account">이미 계정이 있으신가요?</span> <span style="color:var(--purple-l);cursor:pointer;font-weight:700;" onclick="switchForm('login')" data-i18n="login">로그인</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="globalToast"></div>
+
+<script src="js/thailand-addresses.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/config.js"></script>
+<script>
+let role = 'buyer';
+
+// Residence Country Setup
+let currentResidence = localStorage.getItem("iris_residence") || "ko";
+function changeResidence(res) {
+  currentResidence = res;
+  localStorage.setItem("iris_residence", res);
+  const select = document.getElementById("residenceSelect");
+  if (select) select.value = res;
+}
+const rSelect = document.getElementById("residenceSelect");
+if (rSelect) rSelect.value = currentResidence;
+
+// Run translations immediately safely
+try {
+  if (window.applyTranslations) applyTranslations();
+} catch (e) {
+  console.error("Translation init failed:", e);
+}
+
+// Initialize Thailand address dropdowns
+try {
+  initThailandAddressSelects('rProvince', 'rDistrict');
+} catch (e) {
+  console.error("Address dropdowns init failed:", e);
+}
+
+// Already logged in check (CORS/file protocol safe)
+try {
+  if (typeof supabase !== 'undefined' && supabase.auth) {
+    supabase.auth.getUser()
+      .then(({ data }) => { if (data && data.user) redirect(); })
+      .catch(err => console.warn("Supabase getUser failed:", err));
+  }
+} catch (e) {
+  console.warn("Supabase auth check skipped:", e);
+}
+
+function switchForm(t) {
+  const isLogin = t === 'login';
+  document.getElementById('tabA').className = 'tab-btn' + (isLogin ? ' active' : '');
+  document.getElementById('tabB').className = 'tab-btn' + (!isLogin ? ' active' : '');
+  document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('regForm').style.display = isLogin ? 'none' : 'block';
+  applyTranslations();
+}
+
+function pickRole(r) {
+  role = r;
+  document.getElementById('rBuyer').className = 'role-opt' + (r === 'buyer' ? ' sel' : '');
+  document.getElementById('rSeller').className = 'role-opt' + (r === 'seller' ? ' sel' : '');
+  document.getElementById('sellerExtra').style.display = r === 'seller' ? 'block' : 'none';
+}
+
+// PIN auto-focus (모바일 가상 키보드 최적화 버전)
+function setupPin(ids) {
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    
+    // 입력 이벤트 리스너 (글자 입력 시 다음 인풋 포커스)
+    el.addEventListener('input', () => {
+      if (el.value.length >= 1) {
+        el.value = el.value.slice(0, 1); // 1글자 초과 시 잘라내기
+        if (i < ids.length - 1) {
+          document.getElementById(ids[i+1]).focus();
+        }
+      }
+    });
+    
+    // 백스페이스 감지 리스너
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Backspace') {
+        if (!el.value && i > 0) {
+          const prevEl = document.getElementById(ids[i-1]);
+          prevEl.focus();
+          prevEl.value = ''; // 이전 칸 지우기
+        } else {
+          el.value = ''; // 현재 칸 지우기
+        }
+      }
+    });
+  });
+}
+setupPin(['l1','l2','l3','l4']);
+setupPin(['r1','r2','r3','r4']);
+
+// Auto-focus first PIN field when phone number reaches 10 digits
+const lPhone = document.getElementById('lPhone');
+if (lPhone) {
+  lPhone.addEventListener('input', () => {
+    const val = lPhone.value.replace(/\D/g, '');
+    if (val.length >= 10) {
+      const firstPin = document.getElementById('l1');
+      if (firstPin) firstPin.focus();
+    }
+  });
+}
+const rPhone = document.getElementById('rPhone');
+if (rPhone) {
+  rPhone.addEventListener('input', () => {
+    const val = rPhone.value.replace(/\D/g, '');
+    if (val.length >= 10) {
+      const firstPin = document.getElementById('r1');
+      if (firstPin) firstPin.focus();
+    }
+  });
+}
+
+// Auto-submit login form when the 4th PIN digit is entered
+const l4 = document.getElementById('l4');
+if (l4) {
+  l4.addEventListener('input', () => {
+    if (l4.value.length >= 1) {
+      setTimeout(() => {
+        const pin = getPin(['l1','l2','l3','l4']);
+        if (pin.length === 4) {
+          doLogin();
+        }
+      }, 80); // Small delay to let the 4th bullet render for better UX
+    }
+  });
+}
+
+function getPin(ids) { return ids.map(id => document.getElementById(id).value).join(''); }
+
+async function doLogin() {
+  const cc = document.getElementById('lCc').value;
+  const rawPhone = document.getElementById('lPhone').value.replace(/\D/g,'');
+  const phone = cc + rawPhone;
+  const pin = getPin(['l1','l2','l3','l4']);
+  const errEl = document.getElementById('lErr');
+
+  if (rawPhone.length < 8) { errEl.textContent = t('err_phone_length'); return; }
+  if (pin.length !== 4) { errEl.textContent = t('err_pin_length'); return; }
+  errEl.textContent = '';
+
+  setLoading('btnLogin', true, t('login_loading'));
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: phoneToEmail(phone),
+      password: makePassword(pin, phone)
+    });
+    setLoading('btnLogin', false);
+    if (error) { errEl.textContent = t('err_login_failed'); return; }
+    await redirect();
+  } catch (err) {
+    setLoading('btnLogin', false);
+    errEl.textContent = t('error_occurred') + (err.message || err.toString());
+    console.error(err);
+  }
+}
+
+async function doRegister() {
+  const name = document.getElementById('rName').value.trim();
+  const cc = document.getElementById('rCc').value;
+  const rawPhone = document.getElementById('rPhone').value.replace(/\D/g,'');
+  const phone = cc + rawPhone;
+  const pin = getPin(['r1','r2','r3','r4']);
+  
+  const errEl = document.getElementById('rErr');
+  const okEl = document.getElementById('rOk');
+
+  errEl.textContent = ''; okEl.textContent = '';
+  if (!name) { errEl.textContent = t('toast_name_required'); return; }
+  if (rawPhone.length < 8) { errEl.textContent = t('err_phone_length'); return; }
+  if (pin.length !== 4) { errEl.textContent = t('err_pin_setup'); return; }
+
+  setLoading('btnReg', true, t('register_loading'));
+  try {
+    const isAdmin = !!(ADMIN_PHONE && phone === ADMIN_PHONE);
+    let userId = null;
+
+    // Check if there is already an active session matching this phone number
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser && phoneToEmail(phone) === currentUser.email) {
+      userId = currentUser.id;
+    } else {
+      const { data, error } = await supabase.auth.signUp({
+        email: phoneToEmail(phone),
+        password: makePassword(pin, phone)
+      });
+
+      if (error) {
+        if (error.message.includes('already')) {
+          // Check if profile actually exists in database
+          const { data: existingProfile } = await supabase.from('profiles').select('id').eq('phone', phone).maybeSingle();
+          if (existingProfile) {
+            setLoading('btnReg', false);
+            errEl.textContent = t('err_phone_exists');
+            return;
+          } else {
+            // Profile does not exist (broken state) -> Try to login to complete registration
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: phoneToEmail(phone),
+              password: makePassword(pin, phone)
+            });
+            if (signInError) {
+              setLoading('btnReg', false);
+              errEl.textContent = t('err_registering');
+              return;
+            }
+            userId = signInData.user.id;
+          }
+        } else {
+          setLoading('btnReg', false);
+          errEl.textContent = error.message;
+          return;
+        }
+      } else {
+        userId = data.user.id;
+      }
+    }
+
+    // Insert profile for buyer
+    const profileData = {
+      id: userId,
+      phone, name,
+      role: isAdmin ? 'admin' : 'buyer',
+      is_approved: true
+    };
+
+    const { error: pe } = await supabase.from('profiles').insert(profileData);
+
+    setLoading('btnReg', false);
+    if (pe) { errEl.textContent = t('error_occurred') + pe.message; return; }
+
+    await redirect();
+  } catch (err) {
+    setLoading('btnReg', false);
+    errEl.textContent = t('error_occurred') + (err.message || err.toString());
+    console.error(err);
+  }
+}
+
+async function redirect() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { data: p } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (!p) { 
+    // 프로필이 없는 경우 (인증은 되었으나 프로필 생성이 실패한 비정상 세션)
+    // 회원가입 페이지로 이동시키고 전화번호를 입력하여 완성을 유도합니다.
+    showToast(t('profile_incomplete'), 'error');
+    switchForm('reg');
+    const rawEmail = user.email || '';
+    const phoneNum = rawEmail.split('@')[0];
+    if (phoneNum) {
+      document.getElementById('rPhone').value = phoneNum;
+    }
+    return; 
+  }
+  if (p.role === 'admin' || p.role === 'seller') window.location.href = 'admin/dashboard.html';
+  else window.location.href = 'index.html';
+}
+
+window.addEventListener('languageChanged', () => {
+  applyTranslations();
+});
+</script>
+</body>
+</html>
