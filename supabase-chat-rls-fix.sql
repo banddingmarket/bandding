@@ -1,7 +1,6 @@
--- ============================================================
--- 반띵마켓 (Bandding Market) - 채팅 RLS 권한 및 메시지 읽음(is_read) 업데이트 정책 수정 SQL
--- Supabase 대시보드 → SQL Editor에 아래 내용을 붙여넣고 [RUN]을 실행하세요.
--- ============================================================
+-- 0. 텔레그램 연동용 컬럼 추가
+ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS telegram_thread_id INT;
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS telegram_msg_id TEXT;
 
 -- 1. 테이블의 RLS(Row Level Security) 활성화 재확인
 ALTER TABLE public.chat_rooms ENABLE ROW LEVEL SECURITY;

@@ -5,6 +5,10 @@ const SUPABASE_KEY = 'sb_publishable_4ploxBVivEYI8I8nPBRQuA_JXChFAx_';
 // 고객센터 라인 공식 계정 링크 (LINE Customer Center Link)
 const CUSTOMER_CENTER_LINE_URL = 'https://line.me/ti/p/GoNyhLDN6Q'; // ← 여기에 라인 고객센터 링크를 입력하세요!
 
+// 텔레그램 알림 및 1:1 채팅 연동 설정 (Telegram Chat Sync Settings)
+const TELEGRAM_BOT_TOKEN = '8874032959:AAH__wCFw_vS2mwVgRz-guxquqCZyKcZVsg'; // Bandding_bot
+const TELEGRAM_CHAT_ID = '-1003962747412';  // Bandding 그룹 채팅방 (포럼 토픽 지원)
+
 // 관리자 전화번호 (본인 전화번호 입력 - 숫자만, 국가코드 제외)
 // 예: 태국 번호 0812345678 -> '0812345678'
 const ADMIN_PHONE = ''; // ← 여기에 본인 전화번호 입력!
